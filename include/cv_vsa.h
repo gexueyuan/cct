@@ -68,6 +68,19 @@ typedef struct _vsa_envar{
                  
 }vsa_envar_t;
 
+typedef struct _vsa_crd_node{
+    /* !!!DON'T modify it!!! */
+    list_head_t list;
+
+    uint8_t pid[RCP_TEMP_ID_LEN];  //temporary ID
+
+    /* private */
+    uint16_t life;
+    
+
+}vsa_crd_node_t;
+
+
 typedef int (*vsa_app_handler)(vsa_envar_t *p_vsa, void *p_msg);
 
 

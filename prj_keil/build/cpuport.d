@@ -1,0 +1,9 @@
+.\build\cpuport.o: ..\os\rtthread\libcpu\arm\cortex-m4\cpuport.c
+.\build\cpuport.o: ..\os\rtthread\include\rtthread.h
+.\build\cpuport.o: ..\os\rtthread\include\rtdef.h
+.\build\cpuport.o: ..\include\rtconfig.h
+.\build\cpuport.o: d:\Keil\ARM\ARMCC\include\stdarg.h
+.\build\cpuport.o: ..\os\rtthread\include\rtdebug.h
+.\build\cpuport.o: ..\os\rtthread\include\rtservice.h
+.\build\cpuport.o: ..\os\rtthread\include\rtm.h
+.\build\cpuport.o: ..\os\rtthread\include\rtthread.h

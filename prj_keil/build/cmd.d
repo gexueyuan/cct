@@ -1,0 +1,13 @@
+.\build\cmd.o: ..\os\rtthread\components\finsh\cmd.c
+.\build\cmd.o: ..\os\rtthread\include\rtthread.h
+.\build\cmd.o: ..\os\rtthread\include\rtdef.h
+.\build\cmd.o: ..\include\rtconfig.h
+.\build\cmd.o: d:\Keil\ARM\ARMCC\include\stdarg.h
+.\build\cmd.o: ..\os\rtthread\include\rtdebug.h
+.\build\cmd.o: ..\os\rtthread\include\rtservice.h
+.\build\cmd.o: ..\os\rtthread\include\rtm.h
+.\build\cmd.o: ..\os\rtthread\include\rtthread.h
+.\build\cmd.o: ..\os\rtthread\components\finsh\finsh.h
+.\build\cmd.o: d:\Keil\ARM\ARMCC\include\ctype.h
+.\build\cmd.o: d:\Keil\ARM\ARMCC\include\stdlib.h
+.\build\cmd.o: d:\Keil\ARM\ARMCC\include\string.h

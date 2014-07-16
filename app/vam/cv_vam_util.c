@@ -199,9 +199,9 @@ double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
 
     distance_1_2 *= 1000; /* convert from Km to m */
 
-    rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
-               _directfromangle((int)p_src->dir), (int)p_src->dir,\
-               _directfromangle((int)angle), (int)angle,\
+    rt_kprintf("My head:%s(%d),ID:%d%d%d%d, Your pos:%s(%d),ID:%d%d%d%d, Our delta:%d, distance:%d\n", \
+               _directfromangle((int)p_src->dir), (int)p_src->dir,p_src->pid[0],p_src->pid[1],p_src->pid[2],p_src->pid[3],\
+               _directfromangle((int)p_dest->dir), (int)p_dest->dir,p_dest->pid[0],p_dest->pid[1],p_dest->pid[2],p_dest->pid[3],\
               (int)delta, (int)distance_1_2);
 
     return (delta <= 45)? distance_1_2:(-distance_1_2);

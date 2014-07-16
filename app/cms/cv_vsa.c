@@ -246,7 +246,7 @@ void vsa_init()
     memset(p_vsa, 0, sizeof(vsa_envar_t));
     memcpy(&p_vsa->working_param, &p_cms_param->vsa, sizeof(vsa_config_t));
 
-    p_vsa->alert_mask = (1<<VSA_ID_CRD)||(1<<VSA_ID_VBD)||(1<<VSA_ID_EBD);
+    p_vsa->alert_mask = (1<<VSA_ID_CRD)|(1<<VSA_ID_VBD)|(1<<VSA_ID_EBD);
 
     /* os object for vsa */
     p_vsa->queue_vsa = rt_mq_create("q-vsa", sizeof(sys_msg_t), VSA_QUEUE_SIZE, RT_IPC_FLAG_FIFO);

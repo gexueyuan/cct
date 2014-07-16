@@ -173,6 +173,7 @@ void vam_init(void)
     
     INIT_LIST_HEAD(&p_vam->neighbour_list);
     INIT_LIST_HEAD(&p_vam->sta_free_list);
+	INIT_LIST_HEAD(&p_vam->crd_list);
     for(i = 0;i< VAM_NEIGHBOUR_MAXNUM;i++){
         list_add_tail(&p_vam->remote[i].list, &p_vam->sta_free_list);
     }
