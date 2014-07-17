@@ -108,7 +108,7 @@ uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t
 	rxbd.src[1] = srcAddr>>8;
 	rxbd.hops = radius;
 	rxbd.rssi = rssi;
-	vam_rcp_recv(&rxbd, (uint8_t *)data, sizeof(rcp_msg_basic_safty_t));
+	//vam_rcp_recv(&rxbd, (uint8_t *)data, sizeof(rcp_msg_basic_safty_t));
 	return 1;
 }
 int32_t wnet_dataframe_send(rcp_txinfo_t *txinfo, 

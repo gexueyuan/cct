@@ -100,7 +100,7 @@ static int crd_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-    rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
+    rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
 
     return 1;
 }
@@ -108,7 +108,10 @@ static int crd_judge(vsa_envar_t *p_vsa)
 static int crd_proc(vsa_envar_t *p_vsa, void *arg)
 {
     int err = 1;  /* '1' represent is not handled. */
-    sys_msg_t *p_msg = (sys_msg_t *)arg;
+    sys_msg_t *p_msg = (sys_msg_t *)arg;	
+    vam_envar_t *p_vam = &p_cms_envar->vam;
+	vsa_crd_node_t *p_crd = NULL,*pos = NULL;
+	rt_bool_t  crd_flag;
     
     switch(p_msg->id){
         case VSA_MSG_LOCAL_UPDATE:
@@ -119,6 +122,33 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
 
             if (p_vsa->alert_mask & (1<<VSA_ID_CRD)){
                 if (crd_judge(p_vsa) > 0){
+					
+					rt_sem_take(p_vam->sem_sta, RT_WAITING_FOREVER);
+
+					if(list_empty(&p_vam->crd_list))
+						{
+							p_crd = (vsa_crd_node_t*)rt_malloc(sizeof(vsa_crd_node_t));
+							memcpy(p_crd->pid,p_vsa->remote.pid,RCP_TEMP_ID_LEN);			
+							list_add(&p_crd->list,&p_vam->crd_list);
+						}
+					else
+					  list_for_each_entry(pos,vsa_crd_node_t,&p_vam->crd_list,list)
+							{
+								if(memcmp(p_vsa->remote.pid,pos->pid,RCP_TEMP_ID_LEN) == 0)
+									{
+										crd_flag = RT_FALSE;
+										break;
+									}	
+								else
+									crd_flag = RT_TRUE;
+							}
+					if(crd_flag )
+						{
+							p_crd = (vsa_crd_node_t*)rt_malloc(sizeof(vsa_crd_node_t));
+							memcpy(p_crd->pid,p_vsa->remote.pid,RCP_TEMP_ID_LEN);			
+							list_add(&p_crd->list,&p_vam->crd_list);
+						}	
+					rt_sem_release(p_vam->sem_sta);					
                 /* danger is detected */    
                     if (p_vsa->alert_pend & (1<<VSA_ID_CRD)){
                     /* do nothing */    
@@ -131,7 +161,22 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
                     }
                 }
                 else{
-                    if (p_vsa->alert_pend & (1<<VSA_ID_CRD)){
+					
+					rt_sem_take(p_vam->sem_sta, RT_WAITING_FOREVER);
+					
+					  list_for_each_entry(pos,vsa_crd_node_t,&p_vam->crd_list,list)					
+							{
+								if(memcmp(p_vsa->remote.pid,pos->pid,RCP_TEMP_ID_LEN) == 0)
+									{
+								   		list_del(&pos->list);
+										rt_free((vsa_crd_node_t*)list_entry(&pos->list,vsa_crd_node_t,list));
+									}	
+									
+					  		}	
+					  
+					 rt_sem_release(p_vam->sem_sta);				  
+						
+                    if ((p_vsa->alert_pend & (1<<VSA_ID_CRD))&&(list_empty(&p_vam->crd_list))){
                     /* inform system to stop alert */
                         p_vsa->alert_pend &= ~(1<<VSA_ID_CRD);
                         sys_add_event_queue(&p_cms_envar->sys, \

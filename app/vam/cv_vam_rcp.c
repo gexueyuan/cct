@@ -337,6 +337,10 @@ rcp_msg_basic_safty_t test_bsm_rx_2;
 rcp_rxinfo_t test_rxbd_2;
 rt_timer_t timer_test_bsm_rx_2;
 
+rcp_msg_basic_safty_t test_bsm_rx_3;
+rcp_rxinfo_t test_rxbd_3;
+rt_timer_t timer_test_bsm_rx_3;
+
 void timer_test_bsm_rx_callback(void* parameter)
 {
     vam_rcp_recv(&test_rxbd, (uint8_t *)&test_bsm_rx, sizeof(rcp_msg_basic_safty_t));
@@ -345,6 +349,11 @@ void timer_test_bsm_rx_callback(void* parameter)
 void timer_test_bsm_rx_callback_2(void* parameter)
 {
     vam_rcp_recv(&test_rxbd_2, (uint8_t *)&test_bsm_rx_2, sizeof(rcp_msg_basic_safty_t));
+}
+
+void timer_test_bsm_rx_callback_3(void* parameter)
+{
+    vam_rcp_recv(&test_rxbd_3, (uint8_t *)&test_bsm_rx_3, sizeof(rcp_msg_basic_safty_t));
 }
 
 void test_bsm(void)
@@ -387,13 +396,13 @@ void test_bsm(void)
     //dump((uint8_t *)p_bsm, sizeof(rcp_msg_basic_safty_t));
 
     timer_test_bsm_rx = rt_timer_create("tm-tb",timer_test_bsm_rx_callback,NULL,\
-        MS_TO_TICK(1000),RT_TIMER_FLAG_PERIODIC); 					
+        MS_TO_TICK(2400),RT_TIMER_FLAG_PERIODIC); 					
 
     rt_timer_start(timer_test_bsm_rx);
 }
 
 
-void test_bsm_2(void)
+void tb2(void)
 {
     rcp_msg_basic_safty_t *p_bsm = &test_bsm_rx_2;
     vam_stastatus_t sta;
@@ -401,9 +410,9 @@ void test_bsm_2(void)
 
     #if 1 
     memset(p_local, 0, sizeof(vam_stastatus_t));
-    p_local->pos.lat = 20.0; //39.5427f;
-    p_local->pos.lon = 60.0;//116.2317f;
-    p_local->dir = 180.0;//
+    p_local->pos.lat = 40.0; //39.5427f;
+    p_local->pos.lon = 120.1;//116.2317f;
+    p_local->dir = 90.0;//
     #else
     memcpy(p_local, &p_cms_envar->vam.local, sizeof(vam_stastatus_t));
     #endif
@@ -433,10 +442,56 @@ void test_bsm_2(void)
     //dump((uint8_t *)p_bsm, sizeof(rcp_msg_basic_safty_t));
 
     timer_test_bsm_rx_2 = rt_timer_create("tm-tb",timer_test_bsm_rx_callback_2,NULL,\
-        MS_TO_TICK(1000),RT_TIMER_FLAG_PERIODIC); 					
+        MS_TO_TICK(2400),RT_TIMER_FLAG_PERIODIC); 					
 
     rt_timer_start(timer_test_bsm_rx_2);
 }
+
+void tb3(void)
+{
+    rcp_msg_basic_safty_t *p_bsm = &test_bsm_rx_3;
+    vam_stastatus_t sta;
+    vam_stastatus_t *p_local = &sta;
+
+    #if 1 
+    memset(p_local, 0, sizeof(vam_stastatus_t));
+    p_local->pos.lat = 40.0; //39.5427f;
+    p_local->pos.lon = 120.2;//116.2317f;
+    p_local->dir = 90.0;//
+    #else
+    memcpy(p_local, &p_cms_envar->vam.local, sizeof(vam_stastatus_t));
+    #endif
+    p_local->pid[0] = 0x01;
+    p_local->pid[1] = 0x02;
+    p_local->pid[2] = 0x03;
+    p_local->pid[3] = 0x04;
+    
+    /* construct a fake message */
+    p_bsm->header.msg_id = RCP_MSG_ID_BSM;
+    p_bsm->header.msg_count = 0;
+    memcpy(p_bsm->header.temporary_id, p_local->pid, RCP_TEMP_ID_LEN);
+    p_bsm->header.dsecond = rcp_get_system_time();
+
+    p_bsm->position.lon = encode_longtitude(p_local->pos.lon);
+    p_bsm->position.lat = encode_latitude(p_local->pos.lat);
+    p_bsm->position.elev = encode_elevation(p_local->pos.elev);
+    p_bsm->position.accu = encode_accuracy(p_local->pos.accu);
+
+    p_bsm->motion.heading = encode_heading(p_local->dir);
+    p_bsm->motion.speed = encode_speed(p_local->speed);
+    p_bsm->motion.acce.lon = encode_acce_lon(p_local->acce.lon);
+    p_bsm->motion.acce.lat = encode_acce_lat(p_local->acce.lat);
+    p_bsm->motion.acce.vert = encode_acce_vert(p_local->acce.vert);
+    p_bsm->motion.acce.yaw = encode_acce_yaw(p_local->acce.yaw);
+
+    //dump((uint8_t *)p_bsm, sizeof(rcp_msg_basic_safty_t));
+
+    timer_test_bsm_rx_3 = rt_timer_create("tm-tb",timer_test_bsm_rx_callback_3,NULL,\
+        MS_TO_TICK(2400),RT_TIMER_FLAG_PERIODIC); 					
+
+    rt_timer_start(timer_test_bsm_rx_3);
+}
+
 
 void stop_test_bsm(void)
 {
@@ -452,10 +507,11 @@ FINSH_FUNCTION_EXPORT(test_bsm, debug: testing when bsm is received);
 
 FINSH_FUNCTION_EXPORT(stop_test_bsm, debug: testing when bsm stop);
 
-FINSH_FUNCTION_EXPORT(test_bsm_2, debug: testing when bsm is received);
+FINSH_FUNCTION_EXPORT(tb2, debug: testing when bsm is received);
 
 FINSH_FUNCTION_EXPORT(stop_test_bsm_2, debug: testing when bsm stop);
 
+FINSH_FUNCTION_EXPORT(tb3, debug: testing when bsm is received);
 
 #if 0
 void test_data(void)

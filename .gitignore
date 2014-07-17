@@ -62,3 +62,10 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 .svn/
+.bin
+.d
+.txt
+.iex
+.crf
+.lst
+
