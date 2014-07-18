@@ -486,7 +486,7 @@ static void trx_config(void)
     }
     else
     {
-    	pal_trx_bit_write(SR_ANT_CTRL, ANT_CTRL_2);
+    	pal_trx_bit_write(SR_ANT_CTRL, ANT_CTRL_1);
 	    pal_trx_bit_write(SR_ANT_EXT_SW_EN, ANT_EXT_SW_ENABLE);
     }
 

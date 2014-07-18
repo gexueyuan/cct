@@ -591,13 +591,13 @@ bool wpan_nlde_data_req(NWK_DstAddrMode_t dstAddrMode,
     //fullTimes = 0;
     /* Get the buffer body from buffer header */
     nlde_data_req = (NWK_DataReq_t *)BMM_BUFFER_POINTER(buffer_header);
-	if (routeType == APP_ROUTE_BROADCAST)
-		if (nwkNewPassiveAck((frame_info_t *)nlde_data_req, mac_parse_data.src_addr.short_address,
-				gNwkFrameHeader_p->srcAddr, gNwkFrameHeader_p->sequenceNumber) == false)
-		{
-			bmm_buffer_free(buffer_header);
-			 return false;
-		}
+		if (routeType == APP_ROUTE_BROADCAST)
+			if (nwkNewPassiveAck((frame_info_t *)nlde_data_req, mac_parse_data.src_addr.short_address,
+					gNwkFrameHeader_p->srcAddr, gNwkFrameHeader_p->sequenceNumber) == false)
+			{
+				bmm_buffer_free(buffer_header);
+				 return false;
+			}
 
     /* Update the reset request structure */
     nlde_data_req->cmdcode      = NLDE_DATA_REQUEST;

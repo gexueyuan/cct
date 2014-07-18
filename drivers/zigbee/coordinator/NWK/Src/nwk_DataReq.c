@@ -57,7 +57,7 @@
 #endif
 
 /* Private typedef -----------------------------------------------------------*/
-
+#include "cv_cms_def.h"
 /* Private define ------------------------------------------------------------*/
 
 
@@ -441,7 +441,7 @@ void nlde_data_request (uint8_t *msg)
 #endif                    
 				}
                                 extern void SystemInit (void);
-				SystemInit();
+					SystemInit();
 			    /* Initialising PIO pins */
 			    gpio_init();
 
@@ -453,7 +453,7 @@ void nlde_data_request (uint8_t *msg)
 
 			    /* Initialising timer for PAL */
 			    timer_init();
-				mac_trx_wakeup();
+					mac_trx_wakeup();
 			    pal_global_irq_enable();
 
 
@@ -609,7 +609,7 @@ void nlde_data_request (uint8_t *msg)
 		{
 			timer_status =
 				pal_timer_start(gNwkPassiveAckTable.table[index].timerID,
-								NWK_PASSIVE_ACK_TIMEOUT,//网络层ack最小延时500ms
+								(cms_param.vam.evam_hops*cms_param.vsa.danger_alert_period*2000),//网络层ack最小延时500ms
 								TIMEOUT_RELATIVE,
 	#ifndef VANET
 								(FUNC_PTR)bc_data_cb,
@@ -643,7 +643,7 @@ void nlde_data_request (uint8_t *msg)
 
 			}
 		}
-		else
+		else if (transmit_frame->NwkFrameHeader->radius != 1)
 		{
 			NwkState = NWK_MODULE_NONE;
 			bmm_buffer_free(transmit_frame->buffer_header);
@@ -660,9 +660,16 @@ void nlde_data_request (uint8_t *msg)
                 mac_sleep_trans();
                 return;              
             }
-              
+
+
+						
+      double distance = vsm_get_relative_pos_immediate(&(p_cms_envar->vam.local),transmit_frame->AppFrameHeader->AppPayload);
+			double factor = distance/300;
+			if (factor >= 1)
+				factor = 0.1;
+			else factor = 1-factor;
 			uint32_t timeInterval;
-			timeInterval = (rand()%NWK_MAX_BROADCAST_JITTER)+1;//rand()%
+			timeInterval = (cms_param.vsa.danger_alert_period * cms_param.vam.evam_hops * 2)*factor;
 			//pal_timer_delay(timeInterval*1000);
 
 			index = __CLZ(__RBIT(~broadDelayBitmap));

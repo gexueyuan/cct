@@ -61,7 +61,7 @@ void rt_init_thread_entry(void *parameter)
     //quit...
 }
 
-ALIGN(RT_ALIGN_SIZE);
+ALIGN(RT_ALIGN_SIZE)
 static char thread_zigbee_stack[1024];
 struct rt_thread thread_zigbee;
 static void rt_thread_entry_zigbee(void* parameter)

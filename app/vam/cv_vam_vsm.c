@@ -31,7 +31,7 @@
 
 static uint16_t _cal_peroid_from_speed(uint32_t speed)
 {
-    return 1000;
+    return 100;
 }
 
 void vsm_start_bsm_broadcast(vam_envar_t *p_vam)

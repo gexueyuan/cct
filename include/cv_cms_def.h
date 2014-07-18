@@ -177,6 +177,6 @@ rt_err_t sys_add_event_queue(sys_envar_t *p_sys,
                              uint32_t msg_argc,
                              void    *msg_argv);
 
-
+extern double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload);
 #endif /* __CV_CMS_DEF_H__ */
 

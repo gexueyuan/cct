@@ -44,6 +44,8 @@
 #include "nwk.h"
 #include "nwkStateMachine.h"
 #include "nwk_api.h"
+
+#include "cv_cms_def.h"
 /* === Macros =============================================================== */
 
 
@@ -685,7 +687,29 @@ void mac_process_data_frame(buffer_t *buf_ptr)
             	uint8_t index = nwkFindPassiveAck(gNwkFrameHeader_p->srcAddr, gNwkFrameHeader_p->sequenceNumber);
             	if (index == 0xFF)
             	{
-								if (gNwkFrameHeader_p->radius > 1)  
+								if (blackListEnable == 1)
+								{
+									if (find_black_list(gNwkFrameHeader_p->srcAddr) != -1)
+									{
+										bmm_buffer_free(buf_ptr);
+                    mac_sleep_trans();
+                    return;										
+									}
+								}
+								
+								if (whiteListEnable == 1)
+								{
+									if (find_white_list(gNwkFrameHeader_p->srcAddr) == -1)
+									{
+										bmm_buffer_free(buf_ptr);
+                    mac_sleep_trans();
+                    return;											
+									}
+								}			
+								
+								double distance = vsm_get_relative_pos_immediate(&(p_cms_envar->vam.local),&(gNwkFrameHeader_p->field.payload[7]));			
+								
+								if (gNwkFrameHeader_p->radius > 1 && distance >0)  
 								{
 									wpan_nlde_data_req(NWK_DSTADDRMODE_NOADDR,
 														gNwkFrameHeader_p->srcAddr,//把源网络地址重新填回发送中
@@ -698,6 +722,12 @@ void mac_process_data_frame(buffer_t *buf_ptr)
 														false,
 														APP_ROUTE_BROADCAST);
 								}
+//								else
+//								{
+//										bmm_buffer_free(buf_ptr);
+//                    mac_sleep_trans();
+//                    return;
+//								}
             	}
             	else
 				{

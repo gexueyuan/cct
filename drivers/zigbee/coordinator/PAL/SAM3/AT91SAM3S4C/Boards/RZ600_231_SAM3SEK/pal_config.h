@@ -627,11 +627,12 @@ typedef enum button_id_tag
 #define LED2_PIN                        (GPIO_Pin_2)
 #define LED0_IO                         (GPIOC)
 #define LED1_IO                         (GPIOC)
-#define LED2_IO                         (GPIOC)          
+#define LED2_IO                         (GPIOC)  
+#define RX_LNA_IO                        (GPIOC)
 #endif          
 #endif
 
-#define RX_LNA                          (GPIO_Pin_11)
+#define RX_LNA                          (GPIO_Pin_5)
 #endif
 #define DR_485                          (GPIO_Pin_11)
 /*
@@ -671,8 +672,8 @@ typedef enum button_id_tag
 #define RST_LOW()                       {PIN_CLEAR(RST, RST_IO)}
 #define SLP_TR_HIGH()                   {PIN_SET(SLP_TR, SLP_TR_IO)}
 #define SLP_TR_LOW()                    {PIN_CLEAR(SLP_TR, SLP_TR_IO)}
-#define RX_LNA_HIGH()                    {PIN_SET(RX_LNA, GPIOA)}
-#define RX_LNA_LOW()                    {PIN_CLEAR(RX_LNA, GPIOA)}
+#define RX_LNA_HIGH()                    {PIN_SET(RX_LNA, RX_LNA_IO)}
+#define RX_LNA_LOW()                    {PIN_CLEAR(RX_LNA, RX_LNA_IO)}
 #endif
 
 /*

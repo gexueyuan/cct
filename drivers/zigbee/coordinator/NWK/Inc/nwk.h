@@ -213,9 +213,10 @@ void bc_delay_cb(frame_info_t *transmit_frame);
 #endif
 
 uint8_t nwkFindBroadDelay(const ShortAddr_t srcAddr, const NwkSequenceNumber_t seqNum);
-
-
-
+int8_t find_black_list(uint16_t srcAddr);
+int8_t find_white_list(uint16_t srcAddr);
+extern bool blackListEnable;
+extern bool whiteListEnable;
 
 
 

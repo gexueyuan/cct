@@ -68,4 +68,10 @@ $RECYCLE.BIN/
 .iex
 .crf
 .lst
+.map
+.axf
+.htm
+.bak
+.uvopt
+.dep
 

@@ -30,6 +30,62 @@
 #define PI 3.1415926
 #define RAD(d) ((d)*PI/180.0)
 
+
+#define _COMPILE_INLINE__
+
+
+_COMPILE_INLINE__ uint16_t cv_ntohs(uint16_t s16);
+
+__COMPILE_INLINE__ uint32_t cv_ntohl(uint32_t l32);
+
+__COMPILE_INLINE__ float cv_ntohf(float f32);
+
+
+__COMPILE_INLINE__ int32_t encode_longtitude(float x);
+
+
+__COMPILE_INLINE__ float decode_longtitude(uint32_t x);
+
+#define encode_latitude(x) encode_longtitude(x) 
+#define decode_latitude(x) decode_longtitude(x) 
+
+#define encode_accuracy(x) encode_longtitude(x) 
+#define decode_accuracy(x) decode_longtitude(x) 
+
+__COMPILE_INLINE__ uint16_t encode_elevation(float x);
+
+__COMPILE_INLINE__ float decode_elevation(uint16_t x);
+
+__COMPILE_INLINE__ uint16_t encode_speed(float x);
+
+
+__COMPILE_INLINE__ float decode_speed(uint16_t x);
+
+__COMPILE_INLINE__ uint16_t encode_heading(float x);
+
+__COMPILE_INLINE__ float decode_heading(uint16_t x);
+
+__COMPILE_INLINE__ uint16_t encode_acce_lon(float x);
+
+__COMPILE_INLINE__ float decode_acce_lon(uint16_t x);
+__COMPILE_INLINE__ uint16_t encode_acce_lat(float x);
+
+__COMPILE_INLINE__ float decode_acce_lat(uint16_t x);
+
+__COMPILE_INLINE__ uint16_t encode_acce_vert(float x);
+
+__COMPILE_INLINE__ float decode_acce_vert(uint16_t x);
+
+__COMPILE_INLINE__ uint8_t encode_acce_yaw(float x);
+
+__COMPILE_INLINE__ float decode_acce_yaw(uint8_t x);
+
+
+
+
+
+
+
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
@@ -141,6 +197,93 @@ const char *_directfromangle(int angle)
 }
 
 
+double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
+{
+    double lat1, lng1, lat2, lng2, lat3, lng3;
+    double distance_1_2, distance_2_3;
+    double angle, delta;
+
+		rcp_msg_basic_safty_t *p_bsm;
+    vam_stastatus_t p_dest;
+	
+		p_bsm = (rcp_msg_basic_safty_t *)payload;
+
+		p_dest.timestamp = p_bsm->header.dsecond;
+
+		p_dest.pos.lon = decode_longtitude(p_bsm->position.lon);
+		p_dest.pos.lat = decode_latitude(p_bsm->position.lat);
+		p_dest.pos.elev = decode_elevation(p_bsm->position.elev);
+		p_dest.pos.accu = decode_accuracy(p_bsm->position.accu);
+
+		p_dest.dir = decode_heading(p_bsm->motion.heading);
+		p_dest.speed = decode_speed(p_bsm->motion.speed);
+		p_dest.acce.lon = decode_acce_lon(p_bsm->motion.acce.lon);
+		p_dest.acce.lat = decode_acce_lat(p_bsm->motion.acce.lat);
+		p_dest.acce.vert = decode_acce_vert(p_bsm->motion.acce.vert);
+		p_dest.acce.yaw = decode_acce_yaw(p_bsm->motion.acce.yaw);	
+	
+	
+    /* reference point */
+    lat1 = p_src->pos.lat;
+    lng1 = p_src->pos.lon;
+
+    /* destination point */
+    lat2 = p_dest.pos.lat;
+    lng2 = p_dest.pos.lon;
+
+    /* temp point */
+    lat3 = lat1;
+    lng3 = lng2;
+
+    distance_1_2 = getDistanceVer2(lat1, lng1, lat2, lng2);
+    distance_2_3 = getDistanceVer2(lat2, lng2, lat3, lng3);
+    angle = acos(distance_2_3/distance_1_2)*180/PI;
+
+    /* calculate the relative angle against north, clockwise  */
+    if (lat2 >= lat1){
+    /* north */
+        if (lng2 >= lng1){
+        /* easts */
+            //equal
+        }
+        else{
+            angle = 360-angle;
+        }
+    }
+    else{
+    /* south */
+        if (lng2 >= lng1){
+        /* easts */
+            angle = 180-angle;
+        }
+        else{
+            angle = 180+angle;
+        }
+    }
+
+    /* calculate the angle detra between local front and remote position  */
+    if (angle > p_src->dir){
+        delta = angle - p_src->dir;
+    }
+    else{
+        delta = p_src->dir - angle;
+    }
+
+    if (delta > 180){
+        delta = 360 - delta;
+    }
+
+    distance_1_2 *= 1000; /* convert from Km to m */
+
+    rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
+               _directfromangle((int)p_src->dir), (int)p_src->dir,\
+               _directfromangle((int)angle), (int)angle,\
+              (int)delta, (int)distance_1_2);
+
+    return (delta <= 45)? distance_1_2:(-distance_1_2);
+}
+
+
 double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
 {
     double lat1, lng1, lat2, lng2, lat3, lng3;
@@ -198,7 +341,12 @@ double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
     }
 
     distance_1_2 *= 1000; /* convert from Km to m */
-
+/*	
+	rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
+				   _directfromangle((int)p_src->dir), (int)p_src->dir,\
+				   _directfromangle((int)angle), (int)angle,\
+				  (int)delta, (int)distance_1_2);
+*/
     rt_kprintf("My head:%s(%d),ID:%d%d%d%d, Your pos:%s(%d),ID:%d%d%d%d, Our delta:%d, distance:%d\n", \
                _directfromangle((int)p_src->dir), (int)p_src->dir,p_src->pid[0],p_src->pid[1],p_src->pid[2],p_src->pid[3],\
                _directfromangle((int)p_dest->dir), (int)p_dest->dir,p_dest->pid[0],p_dest->pid[1],p_dest->pid[2],p_dest->pid[3],\

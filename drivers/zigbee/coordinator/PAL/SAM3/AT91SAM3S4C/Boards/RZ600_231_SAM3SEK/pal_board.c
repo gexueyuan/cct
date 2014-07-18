@@ -236,8 +236,8 @@ void gpio_init(void)
     
 #ifndef STM32F10X_CL
 #ifndef   STM32F051  
-#ifndef   STM32F4XX
-    PIN_SET_AS_PIO_OUTPUT(RX_LNA, GPIOA);
+
+    PIN_SET_AS_PIO_OUTPUT(RX_LNA, RX_LNA_IO);
 #ifndef SYS_OS_RTT		
         PIN_SET_AS_PIO_OUTPUT(DR_485, GPIOB);
 		PIN_CLEAR(DR_485, GPIOB);
@@ -245,7 +245,7 @@ void gpio_init(void)
     PAL_RX_LNA_HIGH();
 #endif
 #endif    
-#endif
+
 
 #endif
 }

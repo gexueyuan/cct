@@ -87,6 +87,119 @@
 extern int vam_rcp_recv(rcp_rxinfo_t *rxinfo, uint8_t *databuf, uint32_t datalen);
 uart_communication_buffer_t uart_0_buffer;
 
+bool blackListEnable = 0;
+bool whiteListEnable = 0;
+uint16_t blackTable[64];
+uint64_t blackBitMap = 0;
+uint8_t blackListCount = 0;
+
+uint16_t whiteTable[64];
+uint64_t whiteBitMap = 0;
+uint8_t whiteListCount = 0;
+
+
+int8_t add_black_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+	index = __CLZ(__RBIT(~blackBitMap));
+	if (index < 64)
+	{
+		blackBitMap |= 1 << index;
+		blackTable[index] = srcAddr;
+		blackListCount++;
+	}
+	return index;
+}
+
+int8_t find_black_list(uint16_t srcAddr)
+{
+	uint8_t i,j=0;
+
+	if (blackListCount > 0)
+	{
+		for(i=0; i<64; i++)
+		{
+				if (blackBitMap & (1<<i))
+				{
+						j++;
+						if (blackTable[i] == srcAddr)
+						{
+								return i;
+						}
+						if (j == blackListCount)
+								break;
+				}
+		}
+	}
+	return -1;
+}
+
+int8_t del_black_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+  index = find_black_list(srcAddr);
+	if (index != -1 && index < 64)
+	{
+		blackBitMap &= ~(1 << index);
+		blackTable[index] = 0XFFFF;
+		blackListCount--;		
+	}
+		
+	return index;
+}
+
+
+int8_t add_white_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+	index = __CLZ(__RBIT(~whiteBitMap));
+	if (index < 64)
+	{
+		whiteBitMap |= 1 << index;
+		whiteTable[index] = srcAddr;
+		whiteListCount++;
+	}
+	return index;
+}
+
+int8_t find_white_list(uint16_t srcAddr)
+{
+	uint8_t i,j=0;
+
+	if (whiteListCount > 0)
+	{
+		for(i=0; i<64; i++)
+		{
+				if (whiteBitMap & (1<<i))
+				{
+						j++;
+						if (whiteTable[i] == srcAddr)
+						{
+								return i;
+						}
+						if (j == whiteListCount)
+								break;
+				}
+		}
+	}
+	return -1;
+}
+
+int8_t del_white_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+  index = find_white_list(srcAddr);
+	if (index != -1 && index < 64)
+	{
+		whiteBitMap &= ~(1 << index);
+		whiteTable[index] = 0XFFFF;
+		whiteListCount--;		
+	}
+		
+	return index;
+}
+
+
 uint8_t pal_sio_init(uint8_t UARTx) 
 {
 
@@ -100,7 +213,12 @@ uint8_t pal_sio_init(uint8_t UARTx)
 	UARTx = UARTx;
 	return 0;
 }
-
+bool isOUtNet = 0;
+void out_net()
+{
+	isOUtNet = !isOUtNet;
+}
+FINSH_FUNCTION_EXPORT(out_net, debug: out_net_information);
 uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length)
 {
 	rcp_rxinfo_t rxbd;
@@ -108,6 +226,10 @@ uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t
 	rxbd.src[1] = srcAddr>>8;
 	rxbd.hops = radius;
 	rxbd.rssi = rssi;
+	if (isOUtNet)
+	{
+		    rt_kprintf("src=%x, radius=%x, rssi=%x\n", srcAddr,radius,rssi);
+	}
 	//vam_rcp_recv(&rxbd, (uint8_t *)data, sizeof(rcp_msg_basic_safty_t));
 	return 1;
 }
