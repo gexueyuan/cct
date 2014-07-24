@@ -74,5 +74,6 @@ $RECYCLE.BIN/
 *.bak
 *.uvopt
 *.dep
+*.sct
 prj_keil/*
 
