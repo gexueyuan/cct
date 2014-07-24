@@ -21,15 +21,33 @@
 
 
 
+#define PARAM_ADDR    0x80E0000
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
 cfg_param_t cms_param, *p_cms_param;
+uint8_t* env_var[] = {"vam.bh","vam.bbm","vam.bbs","vam.bbp","vam.bpm","vam.bpht",\
+	                  "vam.eh","vsa.ddst","vsa.dap","vsa.cs","vsa.em","vsa.eat","vsa.eah"}
 
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
+int8_t  get_param_pos(uint8_t* param)
+{
+	
+  int8_t pos;
 
+  for(pos = 0;pos++;pos<(sizeof(env_var)))
+  	{
+		if(strcmp(param,env_var[pos]) == 0)
+			return pos;
+
+  	}
+  
+  pos = -1;
+  
+  return pos;	
+}
 void load_default_param(cfg_param_t *param)
 {
     memset(param, 0 , sizeof(cfg_param_t));
@@ -92,7 +110,7 @@ void write_test(void)
 {
  uint8_t* test_string = "bbbb thin";
  drv_fls_erase(FLASH_Sector_11);
- drv_fls_write(0x80E0000,test_string,10);
+ drv_fls_write(PARAM_ADDR,test_string,10);
 
 }
 
@@ -100,7 +118,7 @@ void param_read_test(void)
 {
  uint8_t test_string[10];
  
- drv_fls_read(0x80E0000,test_string,10);
+ drv_fls_read(PARAM_ADDR,test_string,10);
  	
  rt_kprintf("test data is %s\n",test_string);
 
@@ -114,9 +132,20 @@ FINSH_FUNCTION_EXPORT(param_read_test, debug:testing flash);
 
 //FINSH_FUNCTION_EXPORT(param_get, get system parameters);
 
-void param_set(uint8_t *param, uint8_t *value)
+void param_set(uint8_t *param, int8_t value)
 {
+	uint8_t *p_string = param;
 
+	cfg_param_t *cfg_param;
+
+	cfg_param = (cfg_param_t*)rt_malloc(sizeof(cfg_param_t));
+
+	drv_fls_read(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
+	
+	cfg_param->
+	drv_fls_erase(FLASH_Sector_11);
+
+	
 
 }
 FINSH_FUNCTION_EXPORT(param_set, set system parameters);
