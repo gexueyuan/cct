@@ -87,7 +87,32 @@ void param_get(void)
 
     rt_kprintf("----------------------end---------------------\n");
 }
-FINSH_FUNCTION_EXPORT(param_get, get system parameters);
+
+void write_test(void)
+{
+ uint8_t* test_string = "bbbb thin";
+ drv_fls_erase(FLASH_Sector_11);
+ drv_fls_write(0x80E0000,test_string,10);
+
+}
+
+void param_read_test(void)
+{
+ uint8_t test_string[10];
+ 
+ drv_fls_read(0x80E0000,test_string,10);
+ 	
+ rt_kprintf("test data is %s\n",test_string);
+
+ 
+
+}
+
+FINSH_FUNCTION_EXPORT(write_test, debug:testing flash);
+FINSH_FUNCTION_EXPORT(param_read_test, debug:testing flash);
+
+
+//FINSH_FUNCTION_EXPORT(param_get, get system parameters);
 
 void param_set(uint8_t *param, uint8_t *value)
 {
