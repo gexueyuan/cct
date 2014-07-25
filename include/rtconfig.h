@@ -121,7 +121,7 @@
 // <bool name="FINSH_USING_DESCRIPTION" description="Keeping description in symbol table" default="true" />
 #define FINSH_USING_DESCRIPTION
 // <integer name="FINSH_THREAD_STACK_SIZE" description="The stack size for finsh thread" default="4096" />
-#define FINSH_THREAD_STACK_SIZE	512
+#define FINSH_THREAD_STACK_SIZE	1024
 // </section>
 
 // <section name="LIBC" description="C Runtime library setting" default="always" >

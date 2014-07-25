@@ -31,8 +31,9 @@ typedef struct _vsa_config{
     /*
         General
     */
+    
+
     uint8_t danger_detect_speed_threshold;  /* unit: km/h */
-    uint16_t danger_alert_period;  /* 50~1000, unit:ms, min accuracy :10ms */
 
     /*
         Close Range Danger function:
@@ -45,6 +46,8 @@ typedef struct _vsa_config{
     uint8_t ebd_mode;  /* 0 - disable, 1 - enable */
     uint8_t ebd_acceleration_threshold; /* unit:m/s2 */
     uint8_t ebd_alert_hold_time;  /* unit:s */
+	
+    uint16_t danger_alert_period;  /* 50~1000, unit:ms, min accuracy :10ms */
 }vsa_config_t;
 
 
