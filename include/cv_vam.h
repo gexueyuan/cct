@@ -170,7 +170,7 @@ typedef struct _vam_envar{
 
     list_head_t sta_free_list;
     list_head_t neighbour_list;
-	list_head_t crd_list;
+    list_head_t crd_list;
 
     vam_evt_handler evt_handler[VAM_EVT_MAX];
 

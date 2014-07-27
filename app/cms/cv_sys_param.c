@@ -279,6 +279,8 @@ void param_set(const char *param, uint16_t value)
 
 	rt_free(cfg_param);
 
+	cfg_param = NULL;
+
 }
 
 
@@ -290,6 +292,8 @@ FINSH_FUNCTION_EXPORT(param_set, set system parameters);
 void flash_read(void)
 {
 	cfg_param_t  *param_temp;
+
+	param_temp = (cfg_param_t*)rt_malloc(sizeof(cfg_param_t));
 
 	drv_fls_read(PARAM_ADDR,(uint8_t *)param_temp,sizeof(cfg_param_t));
 		
@@ -313,6 +317,9 @@ void flash_read(void)
 
     rt_kprintf("----------------------end---------------------\n");	
 
+	rt_free(param_temp);
+
+	param_temp = NULL;
 
 }
 
