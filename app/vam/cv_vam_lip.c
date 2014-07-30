@@ -96,7 +96,11 @@ void lip_update_local(t_nmea_rmc *p_rmc, float *p_accu)
     if (p_rmc){
         p_vam->local.pos.lat = (float)p_rmc->latitude;
     	p_vam->local.pos.lon = (float)p_rmc->longitude;
-    	p_vam->local.speed = (float)p_rmc->speed;
+        if (p_vam->local.speed != (float)p_rmc->speed)
+        {
+    	    p_vam->local.speed = (float)p_rmc->speed;
+            vsm_update_bsm_bcast_timer(p_vam);
+        }
         p_vam->local.dir = (float)p_rmc->heading;
 
         //dump_pos(&p_vam->local);

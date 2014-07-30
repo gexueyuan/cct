@@ -37,7 +37,9 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
 
 	uart = (struct stm32_uart *)serial->parent.user_data;
 
-	if (cfg->baud_rate == BAUD_RATE_9600)
+	if (cfg->baud_rate == BAUD_RATE_4800)
+		USART_InitStructure.USART_BaudRate = 4800;
+	else if (cfg->baud_rate == BAUD_RATE_9600)
 		USART_InitStructure.USART_BaudRate = 9600;
 	else if (cfg->baud_rate == BAUD_RATE_115200)
 		USART_InitStructure.USART_BaudRate = 115200;
@@ -347,7 +349,7 @@ void rt_hw_usart_init(void)
 
 #ifdef RT_USING_UART1
 	uart = &uart1;
-	config.baud_rate = BAUD_RATE_115200;
+	config.baud_rate = BAUD_RATE_9600;
 	config.bit_order = BIT_ORDER_LSB;
 	config.data_bits = DATA_BITS_8;
 	config.parity    = PARITY_NONE;

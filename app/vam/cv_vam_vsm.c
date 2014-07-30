@@ -29,9 +29,26 @@
  * implementation of functions                                               *
 *****************************************************************************/
 
-static uint16_t _cal_peroid_from_speed(uint32_t speed)
+/* 
+    计算本车状态消息自动发送时间，发送周期P=d*1000/r，其中：
+    P表示发送周期，单位ms，最小精度10ms，强制取值范围100ms~3000ms
+    d表示距离因子，单位m，默认取值为5
+    r表示车速，单位为m/s
+*/
+static uint16_t _cal_peroid_from_speed(float speed, uint8_t bsm_boardcast_saftyfactor)
 {
-    return 100;
+    uint16_t period = 100;
+    if(0 == speed)
+    {
+        period = 3000;
+    }
+    else
+    {
+        /* parameter speed, unit: km/h */
+        period = bsm_boardcast_saftyfactor*3600/speed;
+    }
+    period = period < 100 ? 100 : (period > 3000 ? 3000 : period/10*10);
+    return period;
 }
 
 void vsm_start_bsm_broadcast(vam_envar_t *p_vam)
@@ -40,8 +57,7 @@ void vsm_start_bsm_broadcast(vam_envar_t *p_vam)
     
     if(p_vam->working_param.bsm_boardcast_mode == BSM_BC_MODE_AUTO){
         //calcute peroid from speed
-
-        period = _cal_peroid_from_speed(0);
+        period = _cal_peroid_from_speed(p_vam->local.speed, p_vam->working_param.bsm_boardcast_saftyfactor);
     }
     else if (p_vam->working_param.bsm_boardcast_mode == BSM_BC_MODE_FIXED){
         period = p_vam->working_param.bsm_boardcast_period;
@@ -61,9 +77,25 @@ void vsm_stop_bsm_broadcast(vam_envar_t *p_vam)
 void timer_send_bsm_callback(void* parameter)
 {
     vam_envar_t *p_vam = (vam_envar_t *)parameter;
-
     if ((p_vam->flag&VAM_FLAG_TX_BSM)&&(!(p_vam->flag&VAM_FLAG_TX_BSM_PAUSE))){
         vam_add_event_queue(p_vam, VAM_MSG_RCPTX, 0, RCP_MSG_ID_BSM, NULL);
+    }
+}
+
+/* update timeout time of the bsm broadcast timer*/
+void vsm_update_bsm_bcast_timer(vam_envar_t *p_vam)
+{
+    uint16_t period;
+    rt_tick_t timeout;
+    if(p_vam->working_param.bsm_boardcast_mode == BSM_BC_MODE_AUTO)
+    {
+        period = _cal_peroid_from_speed(p_vam->local.speed, p_vam->working_param.bsm_boardcast_saftyfactor);
+        timeout = MS_TO_TICK(period);
+        if(p_vam->bsm_send_period_ticks != timeout)
+        {
+            rt_timer_control(p_vam->timer_send_bsm, RT_TIMER_CTRL_SET_TIME, &timeout);
+            p_vam->bsm_send_period_ticks = timeout;
+        }
     }
 }
 

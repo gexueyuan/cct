@@ -30,6 +30,46 @@ typedef void (*gps_data_callback)(uint8_t *, uint32_t);
 extern t_gps_buff __GPSBuff;
 //extern gps_data_callback gps_recv_cb;
 
+
+#define UBX_SYSN_CHAR1 0xB5
+#define UBX_SYSN_CHAR2 0x62
+
+typedef enum ubx_cfg_msg_nmea_id
+{
+    STD_NMEA_ID_GGA = 0x00,
+    STD_NMEA_ID_GLL,
+    STD_NMEA_ID_GSA,
+    STD_NMEA_ID_GSV,
+    STD_NMEA_ID_RMC,
+    STD_NMEA_ID_VTG,
+    
+    STD_NMEA_ID_GRS,
+    STD_NMEA_ID_GST,
+    STD_NMEA_ID_ZDA,
+    STD_NMEA_ID_GBS,
+    STD_NMEA_ID_DTM,
+    
+    STD_NMEA_ID_END,
+                 
+}ubx_cfg_msg_nmea_id_t;
+
+typedef struct _ubx_pkt_hdr
+{
+    uint8_t syncChar1;
+    uint8_t syncChar2;
+    uint8_t msgClass;
+    uint8_t msgId;
+    uint16_t length;
+}gps_ubx_pkt_hdr_t;
+
+typedef struct _ubx_cfg_msg
+{
+    uint8_t nmeaClass;
+    uint8_t nmeaid;
+    uint8_t portOn[6]; //send to port: i2c, uart1, uart2, usb, spi, other. 
+}gps_ubx_cfg_msg_t;
+
+
 void gps_callback_register(gps_data_callback fp);
 
 void gps_init(void);

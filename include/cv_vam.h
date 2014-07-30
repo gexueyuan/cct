@@ -196,6 +196,8 @@ extern vam_envar_t *p_vam_envar;
 
 void vsm_start_bsm_broadcast(vam_envar_t *p_vam);
 void vsm_stop_bsm_broadcast(vam_envar_t *p_vam);
+void vsm_update_bsm_bcast_timer(vam_envar_t *p_vam);
+
 rt_err_t vam_add_event_queue(vam_envar_t *p_vam, 
                              uint16_t msg_id, 
                              uint16_t msg_len, 
