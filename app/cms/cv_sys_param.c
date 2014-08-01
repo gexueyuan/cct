@@ -35,8 +35,8 @@ extern	int drv_fls_write(uint32_t flash_address, uint8_t *p_databuf, uint32_t le
 *****************************************************************************/
 
 cfg_param_t cms_param, *p_cms_param;
-const char* env_var[] = {"id","vam.bh","vam.bbm","vam.bbs","vam.bpm","vam.bpht","vam.eh","vam.bbp",\
-	                  	 "vsa.ddst","vsa.cs","vsa.em","vsa.eat","vsa.eaht","vsa.dap","print"};
+const char* env_var[] = {"id","vam.bh","vam.bbm","vam.bbs","vam.bpm","vam.bpht","vam.bbp","vam.eh","vam.ebt","vam.ebp",\
+	                  	 "vsa.ddst","vsa.dap","vsa.cs","vsa.em","vsa.eat","vsa.eaht","print"};
 
 uint8_t	param_init_words[] = "Vanet-param";
 /*****************************************************************************
@@ -151,15 +151,18 @@ void param_get(void)
     rt_kprintf("vam.bsm_boardcast_saftyfactor(vam.bbs)=%d\n", p_cms_param->vam.bsm_boardcast_saftyfactor);
     rt_kprintf("vam.bsm_pause_mode(vam.bpm)=%d\n", p_cms_param->vam.bsm_pause_mode);
     rt_kprintf("vam.bsm_pause_hold_time(vam.bpht)=%d (s)\n", p_cms_param->vam.bsm_pause_hold_time);
+    rt_kprintf("vam.bsm_boardcast_period(vam.bbp)=%d (ms)\n", p_cms_param->vam.bsm_boardcast_period);
+
     rt_kprintf("vam.evam_hops(vam.eh)=%d\n", p_cms_param->vam.evam_hops);
-    rt_kprintf("vam.bsm_boardcast_period(vam.bbp)=%d (ms)\n\n", p_cms_param->vam.bsm_boardcast_period);
+    rt_kprintf("vam.evam_broadcast_type(vam.ebt)=%d\n", p_cms_param->vam.evam_broadcast_type);
+    rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d\n\n", p_cms_param->vam.evam_broadcast_peroid);
 
     rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (m/s)\n", p_cms_param->vsa.danger_detect_speed_threshold);
-    rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", p_cms_param->vsa.crd_saftyfactor);
+    rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);
+	rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", p_cms_param->vsa.crd_saftyfactor);
     rt_kprintf("vsa.ebd_mode(vsa.em)=%d\n", p_cms_param->vsa.ebd_mode);
     rt_kprintf("vsa.ebd_acceleration_threshold(vsa.eat)=%d (m/s2)\n", p_cms_param->vsa.ebd_acceleration_threshold);
     rt_kprintf("vsa.ebd_alert_hold_time(vsa.eaht)=%d (s)\n", p_cms_param->vsa.ebd_alert_hold_time);
-    rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);
 
     rt_kprintf("...\n");
 
@@ -218,7 +221,7 @@ FINSH_FUNCTION_EXPORT(print_fd, print  data of specified  address in flash);
 
 
 
-void param_set(const char *param, uint16_t value)
+int param_set(const char *param, uint16_t value)
 {
 
 	int8_t  pos;
@@ -232,7 +235,14 @@ void param_set(const char *param, uint16_t value)
 	drv_fls_read(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
 
 	pos = get_param_pos(param);
-	
+
+	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp"))
+		if(value > 0xff)
+			{
+				//value = 0xff;
+				rt_kprintf("max value is 0xff");
+				return -1;
+			}
 	switch(pos){
 
 		case 0:
@@ -259,34 +269,44 @@ void param_set(const char *param, uint16_t value)
 			cfg_param->vam.bsm_pause_hold_time = value;
 			break;
 		case 6:
-			cfg_param->vam.evam_hops = value;
-			break;
-		case 7:
 			cfg_param->vam.bsm_boardcast_period = value;
 			break;
-
 			
+		case 7:
+			cfg_param->vam.evam_hops = value;
+			break;
 		case 8:
-			cfg_param->vsa.danger_detect_speed_threshold = value;
+			cfg_param->vam.evam_broadcast_type = value;
 			break;
 		case 9:
-			cfg_param->vsa.crd_saftyfactor = value;
+			cfg_param->vam.evam_broadcast_peroid = value;
 			break;			
-		case 10:
-			cfg_param->vsa.ebd_mode = value;
-			break;
-		case 11:
-			cfg_param->vsa.ebd_acceleration_threshold = value;
-			break;			
-		case 12:
-			cfg_param->vsa.ebd_alert_hold_time = value;
-			break;
-		case 13:
-			cfg_param->vsa.danger_alert_period = value;
-			break;
+
 
 			
+		case 10:
+			cfg_param->vsa.danger_detect_speed_threshold = value;
+			break;
+		case 11:
+			cfg_param->vsa.danger_alert_period = value;
+			
+			break;			
+		case 12:
+			cfg_param->vsa.crd_saftyfactor = value;
+			break;			
+		case 13:
+			cfg_param->vsa.ebd_mode = value;
+			break;
 		case 14:
+			cfg_param->vsa.ebd_acceleration_threshold = value;
+			break;			
+		case 15:
+			cfg_param->vsa.ebd_alert_hold_time = value;
+			break;
+
+
+			
+		case 16:
 			cfg_param->print_xxx = value;
 
 		default:
@@ -309,6 +329,8 @@ void param_set(const char *param, uint16_t value)
 	rt_free(cfg_param);
 
 	cfg_param = NULL;
+
+	return 0;
 
 }
 
@@ -333,15 +355,18 @@ void flash_read(void)
     rt_kprintf("vam.bsm_boardcast_saftyfactor(vam.bbs)=%d\n", param_temp->vam.bsm_boardcast_saftyfactor);
     rt_kprintf("vam.bsm_pause_mode(vam.bpm)=%d\n", param_temp->vam.bsm_pause_mode);
     rt_kprintf("vam.bsm_pause_hold_time(vam.bpht)=%d (s)\n", param_temp->vam.bsm_pause_hold_time);
-    rt_kprintf("vam.evam_hops(vam.eh)=%d\n", param_temp->vam.evam_hops);
-    rt_kprintf("vam.bsm_boardcast_period(vam.bbp)=%d (ms)\n\n", param_temp->vam.bsm_boardcast_period);
+    rt_kprintf("vam.bsm_boardcast_period(vam.bbp)=%d (ms)\n", param_temp->vam.bsm_boardcast_period);
+
+	rt_kprintf("vam.evam_hops(vam.eh)=%d\n", param_temp->vam.evam_hops);
+	rt_kprintf("vam.evam_broadcast_type(vam.ebt)=%d\n", param_temp->vam.evam_broadcast_type);
+	rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d\n\n", param_temp->vam.evam_broadcast_peroid);
 
     rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (m/s)\n", param_temp->vsa.danger_detect_speed_threshold);
-    rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", param_temp->vsa.crd_saftyfactor);
+    rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", param_temp->vsa.danger_alert_period);
+	rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", param_temp->vsa.crd_saftyfactor);
     rt_kprintf("vsa.ebd_mode(vsa.em)=%d\n", param_temp->vsa.ebd_mode);
     rt_kprintf("vsa.ebd_acceleration_threshold(vsa.eat)=%d (m/s2)\n", param_temp->vsa.ebd_acceleration_threshold);
     rt_kprintf("vsa.ebd_alert_hold_time(vsa.eaht)=%d (s)\n", param_temp->vsa.ebd_alert_hold_time);
-    rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", param_temp->vsa.danger_alert_period);
 
     rt_kprintf("...\n");
 

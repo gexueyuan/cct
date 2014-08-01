@@ -198,6 +198,13 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
     return err;
 }
 
+
+static int ebd_judge(vsa_envar_t *p_vsa)
+{
+
+	return 1;
+
+}
 static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 {
     return 1;

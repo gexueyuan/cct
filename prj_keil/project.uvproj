@@ -505,6 +505,11 @@
               <FileType>1</FileType>
               <FilePath>..\drivers\cv_drv_led.c</FilePath>
             </File>
+            <File>
+              <FileName>Cv_drv_key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\drivers\Cv_drv_key.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

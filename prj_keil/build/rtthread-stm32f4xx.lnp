@@ -18,6 +18,7 @@
 ".\build\cv_drv_fls.o"
 ".\build\cv_drv_voc.o"
 ".\build\cv_drv_led.o"
+".\build\cv_drv_key.o"
 ".\build\board.o"
 ".\build\i2c.o"
 ".\build\isr.o"

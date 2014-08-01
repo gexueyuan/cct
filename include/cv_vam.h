@@ -106,13 +106,16 @@ typedef struct _vam_config{
     uint8_t bsm_boardcast_saftyfactor;  /* 1~10 */
     uint8_t bsm_pause_mode;  /* 0 - disable, 1 - enable */
     uint8_t bsm_pause_hold_time;  /* unit:s */
-
+    uint16_t bsm_boardcast_period;  /* 100~3000, unit:ms, min accuracy :10ms */
     /* 
         Emergency Vehicle Alert Message TX function:    
     */
     uint8_t evam_hops; //EVAM消息最大跳数；
+	
+	uint8_t evam_broadcast_type;  /* 0 - disable, 1 - auto, 2 - fixed period */
+	
+	uint16_t evam_broadcast_peroid;  //EVAM消息广播周期 ms
     
-    uint16_t bsm_boardcast_period;  /* 100~3000, unit:ms, min accuracy :10ms */
 
 }vam_config_t;
 

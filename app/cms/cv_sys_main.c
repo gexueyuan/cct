@@ -35,6 +35,8 @@ extern void vam_init(void);
 extern void vsa_init(void);
 extern void sys_init(void);
 
+extern int rt_key_init(void);
+
 cms_global_t cms_envar, *p_cms_envar;
 
 
@@ -54,6 +56,7 @@ void rt_init_thread_entry(void *parameter)
   	nmea_init();
     voc_init();
     led_init();
+	rt_key_init();
     
     vam_init();
     vsa_init();    
