@@ -213,7 +213,7 @@ uint8_t pal_sio_init(uint8_t UARTx)
 	UARTx = UARTx;
 	return 0;
 }
-bool isOUtNet = 0;
+bool isOUtNet = 1;
 void out_net()
 {
 	isOUtNet = !isOUtNet;
@@ -222,15 +222,55 @@ FINSH_FUNCTION_EXPORT(out_net, debug: out_net_information);
 uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length)
 {
 	rcp_rxinfo_t rxbd;
+	static uint8_t sumCount = 0;
+	static uint8_t preSeq;
+	static uint32_t lostSeqSum = 0;
+	static uint8_t maxAdjLostSeq = 0;
+	uint8_t adjLostSeq=0;
+	uint32_t packetErrorRate=0;
+
+	
 	rxbd.src[0] = srcAddr;
 	rxbd.src[1] = srcAddr>>8;
 	rxbd.hops = radius;
 	rxbd.rssi = rssi;
 	if (isOUtNet)
 	{
-		    rt_kprintf("src=%x, radius=%x, rssi=%x\n", srcAddr,radius,rssi);
+		
+		if (sumCount == 0)
+		{
+			preSeq = data[1];
+			maxAdjLostSeq = 0;
+			lostSeqSum = 0;
+		}
+		else
+		{
+			if (data[1] != preSeq+1)
+			{
+				adjLostSeq = (data[1]>preSeq?data[1]-preSeq-1:255-preSeq+data[1]);
+				lostSeqSum += adjLostSeq;
+				if (adjLostSeq>maxAdjLostSeq)
+					maxAdjLostSeq = adjLostSeq;
+			}
+			preSeq = data[1];
+		}
+		
+		sumCount ++;
+		
+		if (sumCount == 255)
+		{
+			sumCount = 0;
+			packetErrorRate = lostSeqSum*1000/(255+lostSeqSum);
+		}		
+		
+		if(sumCount != 0)
+		    rt_kprintf("src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
+		else 
+			  rt_kprintf("                     src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
 	}
-	vam_rcp_recv(&rxbd, (uint8_t *)data, sizeof(rcp_msg_basic_safty_t));
+	else sumCount = 0;
+	vam_rcp_recv(&rxbd, (uint8_t *)data, length);
+
 	return 1;
 }
 int32_t wnet_dataframe_send(rcp_txinfo_t *txinfo, 
@@ -341,7 +381,7 @@ NWK_PRIVATE bool nwkNewPassiveAck(frame_info_t *const txDelay,
 
 
 	index = __CLZ(__RBIT(~gNwkPassiveAckTable.BitMap));
-	if (index>2)//考虑freelargequeue 只有3个多广播源定时器
+	if (index>=NWK_MAX_BROADCASR_TABLE_ENTRY)//考虑freelargequeue 只有3个多广播源定时器
 		return false;
 	gNwkPassiveAckTable.table[index].broacCastFrame = txDelay;
 	gNwkPassiveAckTable.table[index].seqNum = seqNum;

@@ -55,10 +55,48 @@ void vsa_gps_status_update(void *parameter)
     vsa_add_event_queue(p_vsa, VSA_MSG_GPS_UPDATE, 0,(uint32_t)parameter,NULL);
 }
 
+
+/* BEGIN: Added by wanglei, 2014/8/1 */
+/* TBD. ???e?¡ì?a¨ª¨º¨¦?¡ä|¨¤¨ª */
+void vsa_peer_alarm_update(void *parameter)
+{
+    vam_stastatus_t *p_alert = (vam_stastatus_t *)parameter;
+    uint16_t peer_alert;
+
+    /* process peer alarm msg */
+    if(p_alert->alert_mask & VAM_ALERT_MASK_VBD)
+    {
+        /* receive peer active VBD alert msg */
+        
+    }
+    else
+    {
+        /* receive peer cancle VBD alert msg */
+
+        /* get peer alert status from vam->neighbour_list */
+        vam_get_peer_alert_status(&peer_alert); 
+        if(!(peer_alert & VAM_ALERT_MASK_VBD))
+        {
+            /* all neighbour canceled their VBD alert, then stop local voice and led alter */
+            rt_kprintf("vsa_peer_alarm_update: cancle peer vbd alert\r\n");
+        }
+        else
+        {
+            rt_kprintf("vsa_peer_alarm_update: can't cancle vbd alert\r\n");
+        }
+    }
+
+    /* process VAM_ALERT_MASK_EBD */
+
+    
+}
+/* END:   Added by wanglei, 2014/8/1 */
+
 void vsa_start(void)
 {
     vam_set_event_handler(VAM_EVT_LOCAL_UPDATE, vsa_local_status_update);
     vam_set_event_handler(VAM_EVT_PEER_UPDATE, vsa_peer_status_update);
+    vam_set_event_handler(VAM_EVT_PEER_ALARM, vsa_peer_alarm_update);
     vam_set_event_handler(VAM_EVT_GPS_STATUS, vsa_gps_status_update);
 }
 

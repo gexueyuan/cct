@@ -68,6 +68,8 @@ typedef __COMPILE_PACK__ struct _rcp_msg_basic_safty{
 
 typedef __COMPILE_PACK__ struct _rcp_msg_emergency_vehicle_alert{
     rcp_msg_head_t header;
+    rcp_position_t position;
+    rcp_motion_t motion;
     uint16_t alert_mask;
 }rcp_msg_emergency_vehicle_alert_t;
 

@@ -34,13 +34,21 @@
 #define VAM_FLAG_TX_BSM       (0x0002)
 #define VAM_FLAG_TX_BSM_PAUSE (0x0004)
 #define VAM_FLAG_GPS_FIXED    (0x0008)
-#define VAM_FLAG_XXX          (0x0010)
+#define VAM_FLAG_TX_EVAM      (0x0010)
+#define VAM_FLAG_XXX          (0x0020)
 
 
 #define VAM_NEIGHBOUR_MAXNUM   (4)  //
 #define VAM_NEIGHBOUR_MAXLIFE  (15)  //unit: second
 
 
+/* BEGIN: Added by wanglei, 2014/8/1 */
+#define VAM_REMOTE_ALERT_MAXLIFE  (5)  //unit: second
+#define VAM_NO_ALERT_EVAM_TX_TIMES (5) //取消所有警告的evam消息发送次数
+
+#define VAM_ALERT_MASK_VBD (0x1)
+#define VAM_ALERT_MASK_EBD (0x2)
+/* END:   Added by wanglei, 2014/8/1 */
 
 enum VAM_EVT{
     VAM_EVT_LOCAL_UPDATE = 0,
@@ -79,6 +87,7 @@ typedef struct _vam_stastatus{
     float  dir;
     float  speed;
     vam_acce_t  acce;
+    uint16_t alert_mask;  //bit0-VBD, bit1-EBD;  1-active, 0-cancel; 同evam中alert_mask
 }vam_stastatus_t;
 
 typedef struct _vam_sta_node{
@@ -89,7 +98,7 @@ typedef struct _vam_sta_node{
 
     /* private */
     uint16_t life;
-    
+    uint16_t alert_life;
     /* os related */
 }vam_sta_node_t;
 
@@ -141,16 +150,6 @@ typedef struct _rcp_txinfo {
 
 
 
-
-
-
-
-
-
-
-
-
-
 typedef void (*vam_evt_handler)(void *);
 
 
@@ -167,6 +166,8 @@ typedef struct _vam_envar{
     rcp_msg_basic_safty_t bsm;
     uint8_t tx_msg_cnt;
 
+    rcp_msg_emergency_vehicle_alert_t evam;
+    uint8_t tx_evam_msg_cnt;
 
     vam_stastatus_t local;
     vam_sta_node_t remote[VAM_NEIGHBOUR_MAXNUM];
@@ -182,6 +183,7 @@ typedef struct _vam_envar{
     rt_mq_t queue_vam;
 
     rt_timer_t timer_send_bsm;
+    rt_timer_t timer_send_evam;
     rt_timer_t timer_bsm_pause;
     rt_timer_t timer_gps_life;
     rt_timer_t timer_neighbour_life;
@@ -229,6 +231,12 @@ int32_t vam_start(void);
 int32_t vam_set_event_handler(uint32_t evt, vam_evt_handler callback);
 int32_t vam_get_peer_relative_pos(uint8_t *pid);
 int32_t vam_get_peer_relative_dir(uint8_t *pid);
+int32_t vam_get_peer_alert_status(uint16_t *alert_mask);
+int32_t vam_active_alert(uint32_t alerttype);
+int32_t vam_cancel_alert(uint32_t alerttype);
+
+int32_t rcp_send_evam(vam_envar_t *p_vam);
+void vsm_start_evam_broadcast(vam_envar_t *p_vam);
 
 
 #endif /* __CV_VAM_H__ */

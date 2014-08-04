@@ -75,6 +75,7 @@ static void ubx_cfg_msg_std_nmea(ubx_cfg_msg_nmea_id_t nmea_id, uint8_t enable)
 
 
 /* UBX-CFG MSG. disable all msg */
+#if 0 //reserved
 static void gps_disable_msg(void)
 {
     ubx_cfg_msg_nmea_id_t i = STD_NMEA_ID_GGA;
@@ -83,7 +84,7 @@ static void gps_disable_msg(void)
         ubx_cfg_msg_std_nmea(i, 0);
     }
 }
-
+#endif
 
 /* UBX-CFG MSG. disable GPGGA/GPGLL/GPGSV/GPVTG msg */
 static void gps_cfg_msg(void)

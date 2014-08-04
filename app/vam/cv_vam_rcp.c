@@ -7,6 +7,7 @@
  @author : wangyifeng
  @history:
            2014-6-17    wangyifeng    Created file
+           2014-7-29    wanglei       modified file: process evam msg 
            ...
 ******************************************************************************/
 #include <stm32f4xx.h>
@@ -236,6 +237,51 @@ int rcp_parse_bsm(vam_envar_t *p_vam,
 
     return 0;
 }
+int rcp_parse_evam(vam_envar_t *p_vam,
+                  rcp_rxinfo_t *rxinfo,
+                  uint8_t *databuf, 
+                  uint32_t datalen)
+{
+    vam_sta_node_t *p_sta;
+    rcp_msg_emergency_vehicle_alert_t *p_evam;
+    uint16_t alert_mask;
+
+    if (datalen < sizeof(rcp_msg_emergency_vehicle_alert_t)){
+        return -1;
+    }
+
+    p_evam = (rcp_msg_emergency_vehicle_alert_t *)databuf;
+    alert_mask = cv_ntohs(p_evam->alert_mask);
+    
+    //rt_kprintf("recv evam: alert_mask = 0x%04x\r\n", alert_mask);
+    p_sta = vam_find_sta(p_vam, p_evam->header.temporary_id);
+    if (p_sta){
+        p_sta->alert_life = VAM_REMOTE_ALERT_MAXLIFE;
+        p_sta->s.timestamp = p_evam->header.dsecond;
+
+        p_sta->s.pos.lon = decode_longtitude(p_evam->position.lon);
+        p_sta->s.pos.lat = decode_latitude(p_evam->position.lat);
+        p_sta->s.pos.elev = decode_elevation(p_evam->position.elev);
+        p_sta->s.pos.accu = decode_accuracy(p_evam->position.accu);
+
+        p_sta->s.dir = decode_heading(p_evam->motion.heading);
+        p_sta->s.speed = decode_speed(p_evam->motion.speed);
+        p_sta->s.acce.lon = decode_acce_lon(p_evam->motion.acce.lon);
+        p_sta->s.acce.lat = decode_acce_lat(p_evam->motion.acce.lat);
+        p_sta->s.acce.vert = decode_acce_vert(p_evam->motion.acce.vert);
+        p_sta->s.acce.yaw = decode_acce_yaw(p_evam->motion.acce.yaw);
+      
+        /* the same alert status inform the app layer once */
+        if(p_sta->s.alert_mask != alert_mask)
+        {
+            p_sta->s.alert_mask = alert_mask;
+            if (p_vam->evt_handler[VAM_EVT_PEER_ALARM]){
+                (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&p_sta->s);
+            }
+        }
+    }
+    return 0;
+}
 
 int rcp_parse_msg(vam_envar_t *p_vam,
                   rcp_rxinfo_t *rxinfo, 
@@ -256,7 +302,7 @@ int rcp_parse_msg(vam_envar_t *p_vam,
             break;
 
         case RCP_MSG_ID_EVAM:
-
+            rcp_parse_evam(p_vam, rxinfo, databuf, datalen);
             break;
 
         default:
@@ -286,11 +332,6 @@ int vam_rcp_recv(rcp_rxinfo_t *rxinfo, uint8_t *databuf, uint32_t datalen)
 #endif
     return 0;
 }
-
-
-
-
-
 
 
 int32_t rcp_send_bsm(vam_envar_t *p_vam)
@@ -323,6 +364,39 @@ int32_t rcp_send_bsm(vam_envar_t *p_vam)
     return wnet_dataframe_send(&txbd, (uint8_t *)p_bsm, sizeof(rcp_msg_basic_safty_t));
 }
 
+int32_t rcp_send_evam(vam_envar_t *p_vam)
+{
+    rcp_msg_emergency_vehicle_alert_t *p_evam = &p_vam->evam;
+    vam_stastatus_t *p_local = &p_vam->local;
+    rcp_txinfo_t txbd;
+
+    p_evam->header.msg_id = RCP_MSG_ID_EVAM;
+    p_evam->header.msg_count = p_vam->tx_evam_msg_cnt++;
+    memcpy(p_evam->header.temporary_id, p_local->pid, RCP_TEMP_ID_LEN);
+    p_evam->header.dsecond = rcp_get_system_time();
+
+    p_evam->position.lon = encode_longtitude(p_local->pos.lon);
+    p_evam->position.lat = encode_latitude(p_local->pos.lat);
+    p_evam->position.elev = encode_elevation(p_local->pos.elev);
+    p_evam->position.accu = encode_accuracy(p_local->pos.accu);
+
+    p_evam->motion.heading = encode_heading(p_local->dir);
+    p_evam->motion.speed = encode_speed(p_local->speed);
+    p_evam->motion.acce.lon = encode_acce_lon(p_local->acce.lon);
+    p_evam->motion.acce.lat = encode_acce_lat(p_local->acce.lat);
+    p_evam->motion.acce.vert = encode_acce_vert(p_local->acce.vert);
+    p_evam->motion.acce.yaw = encode_acce_yaw(p_local->acce.yaw);
+    
+    p_evam->alert_mask = cv_ntohs(p_local->alert_mask);
+
+    memset(&txbd, 0, sizeof(rcp_txinfo_t));
+    memset(txbd.dest, 0xFF, RCP_MACADR_LEN);
+    txbd.hops = p_vam->working_param.evam_hops;
+    
+    //dump((uint8_t *)p_evam, sizeof(rcp_msg_emergency_vehicle_alert_t));
+
+    return wnet_dataframe_send(&txbd, (uint8_t *)p_evam, sizeof(rcp_msg_emergency_vehicle_alert_t));
+}
 
 
 

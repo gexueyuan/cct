@@ -605,7 +605,7 @@ void nlde_data_request (uint8_t *msg)
 		}
 
 		index  = nwkFindPassiveAck(transmit_frame->NwkFrameHeader->srcAddr, transmit_frame->NwkFrameHeader->sequenceNumber);
-		if (index < 3)
+		if (index < NWK_MAX_BROADCASR_TABLE_ENTRY)
 		{
 			timer_status =
 				pal_timer_start(gNwkPassiveAckTable.table[index].timerID,
@@ -653,7 +653,7 @@ void nlde_data_request (uint8_t *msg)
 
 		 if (ndr.routeType == APP_ROUTE_BROADCAST)
 		 {
-            if (broadDelayCount > 2)
+            if (broadDelayCount >= NWK_MAX_BROADCASR_TABLE_ENTRY)
             {
                 NwkState = NWK_MODULE_NONE;
                 //bmm_buffer_free(transmit_frame->buffer_header);

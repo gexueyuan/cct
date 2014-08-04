@@ -28,13 +28,14 @@
 #define BSM_PAUSE_HOLDTIME_DEFAULT   SECOND_TO_TICK(5)
 #define BSM_GPS_LIFE_DEFAULT         SECOND_TO_TICK(5)
 #define NEIGHBOUR_LIFE_ACCUR         SECOND_TO_TICK(1)
+#define EVAM_SEND_PERIOD_DEFAULT     MS_TO_TICK(50)
 
 
 extern void timer_send_bsm_callback(void* parameter);
 extern void timer_bsm_pause_callback(void* parameter);
 extern void timer_gps_life_callback(void* parameter);
 extern void timer_neigh_time_callback(void* parameter);
-
+extern void timer_send_evam_callback(void* parameter);
 
 vam_envar_t *p_vam_envar;
 
@@ -76,10 +77,13 @@ void vam_main_proc(vam_envar_t *p_vam, sys_msg_t *p_msg)
             if (p_msg->argc == RCP_MSG_ID_BSM){
                 rcp_send_bsm(p_vam);
             }
+            if (p_msg->argc == RCP_MSG_ID_EVAM){
+                rcp_send_evam(p_vam);
+            }
+
             break;
 
         case VAM_MSG_RCPRX:
-
             rcp_parse_msg(p_vam, (rcp_rxinfo_t *)p_msg->argv, \
                           (uint8_t *)p_msg->argc, p_msg->len);
             
@@ -170,6 +174,10 @@ void vam_init(void)
     
     memset(p_vam, 0, sizeof(vam_envar_t));
     memcpy(&p_vam->working_param, &p_cms_param->vam, sizeof(vam_config_t));
+	  p_vam->local.pid[0] = 0;
+		p_vam->local.pid[1] = 0;
+		p_vam->local.pid[2] = 0;
+		p_vam->local.pid[3] = 1;
     
     INIT_LIST_HEAD(&p_vam->neighbour_list);
     INIT_LIST_HEAD(&p_vam->sta_free_list);
@@ -195,6 +203,10 @@ void vam_init(void)
     p_vam->timer_bsm_pause = rt_timer_create("tm-bp",timer_bsm_pause_callback,p_vam,\
         BSM_PAUSE_HOLDTIME_DEFAULT,RT_TIMER_FLAG_ONE_SHOT); 					
     RT_ASSERT(p_vam->timer_send_bsm != RT_NULL);
+
+    p_vam->timer_send_evam = rt_timer_create("tm-se",timer_send_evam_callback, p_vam,\
+        EVAM_SEND_PERIOD_DEFAULT,RT_TIMER_FLAG_PERIODIC); 					
+    RT_ASSERT(p_vam->timer_send_evam != RT_NULL);
 
     p_vam->timer_gps_life = rt_timer_create("tm-gl",timer_gps_life_callback,p_vam,\
         BSM_GPS_LIFE_DEFAULT,RT_TIMER_FLAG_ONE_SHOT); 					

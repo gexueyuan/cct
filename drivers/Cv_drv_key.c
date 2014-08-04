@@ -222,22 +222,17 @@ static void key_thread_entry(void *parameter)
 		if (((key->key_get)==C_UP_KEY) && ((key->key_flag) & C_FLAG_SHORT))
 		{	
 			
-			rt_kprintf("key = %x \n",key->key_get);
-			//volmn++;
-			//if (volmn>=100)volmn=100;
-			//rt_kprintf("volmn=%d\r\n",volmn);
+			//rt_kprintf("key = %x \n",key->key_get);
+			rt_kprintf("key = %x \n  active Vihicle Break Down Alert\n",key->key_get);
+			vam_active_alert(0);
+
 		}	
 		
 		if (((key->key_get)==C_DOWN_KEY) && ((key->key_flag) & C_FLAG_SHORT))
 		{	
 			
-			rt_kprintf("key = %x \n",key->key_get);
-			//if (volmn>=1)
-			//{
-			//	volmn--;
-			//}
-			
-			//rt_kprintf("volmn=%d\r\n",volmn);			
+			rt_kprintf("key = %x \n  stop Vihicle Break Down Alert\n",key->key_get);
+			vam_cancel_alert(0);
 		}	
 		
 	}	

@@ -7,6 +7,7 @@
  @author : wangyifeng
  @history:
            2014-6-19    wangyifeng    Created file
+           2014-7-30    wanglei       Modified: added evam msg process
            ...
 ******************************************************************************/
 #include <stdio.h>
@@ -62,7 +63,7 @@ void vsm_start_bsm_broadcast(vam_envar_t *p_vam)
     else if (p_vam->working_param.bsm_boardcast_mode == BSM_BC_MODE_FIXED){
         period = p_vam->working_param.bsm_boardcast_period;
     }
-
+ 
     p_vam->bsm_send_period_ticks = MS_TO_TICK(period);
 
     rt_timer_control(p_vam->timer_send_bsm, RT_TIMER_CTRL_SET_TIME, &p_vam->bsm_send_period_ticks);
@@ -121,6 +122,48 @@ void timer_gps_life_callback(void* parameter)
     }
 }
 
+
+void vsm_start_evam_broadcast(vam_envar_t *p_vam)
+{
+    uint16_t period;
+    rt_tick_t ticks;
+    if(p_vam->working_param.evam_broadcast_type == BSM_BC_MODE_AUTO){
+        period = _cal_peroid_from_speed(p_vam->local.speed, p_vam->working_param.bsm_boardcast_saftyfactor);
+    }
+    else if (p_vam->working_param.evam_broadcast_type == BSM_BC_MODE_FIXED){
+        period = p_vam->working_param.evam_broadcast_peroid;
+    }
+
+    ticks = MS_TO_TICK(period);
+    rt_timer_control(p_vam->timer_send_evam, RT_TIMER_CTRL_SET_TIME, &ticks);
+    rt_timer_start(p_vam->timer_send_evam);
+}
+
+void timer_send_evam_callback(void* parameter)
+{
+    vam_envar_t *p_vam = (vam_envar_t *)parameter;
+    static uint8_t count = VAM_NO_ALERT_EVAM_TX_TIMES;
+    if (p_vam->flag&VAM_FLAG_TX_BSM)
+    {
+        vam_add_event_queue(p_vam, VAM_MSG_RCPTX, 0, RCP_MSG_ID_EVAM, NULL);
+        /* 所有alter已取消 */
+        if(p_vam->local.alert_mask == 0)
+        {
+            /* 发送VAM_NO_ALERT_EVAM_TX_TIMES次后停止发送EVAM消息数据 */
+            if(0 == count--)
+            {
+                p_vam->flag &= ~VAM_FLAG_TX_EVAM;
+                rt_timer_stop(p_vam->timer_send_evam);
+            }
+        }
+        else
+        {
+            count = VAM_NO_ALERT_EVAM_TX_TIMES;
+        }
+    }
+}
+
+
 vam_sta_node_t *vam_find_sta(vam_envar_t *p_vam, uint8_t *temporary_id)
 {
     vam_sta_node_t *p_sta = NULL, *pos;
@@ -160,6 +203,8 @@ void vam_update_sta(vam_envar_t *p_vam)
     vam_sta_node_t *p_sta = NULL;
     list_head_t *pos;
     list_head_t *head = &p_vam->neighbour_list;
+    vam_stastatus_t sta;
+    uint8_t updata_alter_flag = 0;
 
 //    rt_kprintf("%s--->\n", __FUNCTION__);
 
@@ -173,14 +218,26 @@ void vam_update_sta(vam_envar_t *p_vam)
         p_sta = (vam_sta_node_t *)pos;
         pos = pos->next;
 
+        if ((p_sta->alert_life-- <= 0) && (p_sta->s.alert_mask)){
+            rt_kprintf("one neighbour's alert is timeout to canceled.\n");  
+            p_sta->s.alert_mask = 0;
+            memcpy(&sta, &p_sta->s, sizeof(vam_stastatus_t));
+            updata_alter_flag = 1;
+        }
+
         p_sta->life--;
         if (p_sta->life <= 0){
             rt_kprintf("one neighbour is kick out\n");
             list_move_tail(&p_sta->list, &p_vam->sta_free_list);
         }
     }
-    
     rt_sem_release(p_vam->sem_sta);
+
+    /* one neighbours's alert msg timeout */
+    if((p_vam->evt_handler[VAM_EVT_PEER_ALARM]) && updata_alter_flag){
+        (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&sta);
+    }  
+
 }
 
 void timer_neigh_time_callback(void* parameter)
@@ -210,12 +267,16 @@ void vam_list_sta(void)
     rt_kprintf("neighbor node:%d\n", VAM_NEIGHBOUR_MAXNUM - i);
 
 	list_for_each_entry(p_sta, vam_sta_node_t, &p_vam->neighbour_list, list){
-        rt_kprintf("STA:[%02x-%02x-%02x-%02x], life:%d\n",\
+        rt_kprintf("STA:[%02x-%02x-%02x-%02x], life:%d, alert_mask:%d\n",\
             p_sta->s.pid[0],p_sta->s.pid[1],p_sta->s.pid[2],p_sta->s.pid[3],\
-            p_sta->life);
+            p_sta->life, p_sta->s.alert_mask);
 	}
     rt_sem_release(p_vam->sem_sta);
 }
 FINSH_FUNCTION_EXPORT(vam_list_sta, list all neighbour sta);
+
+
+
+
 
 

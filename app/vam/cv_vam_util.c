@@ -275,10 +275,10 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
 
     distance_1_2 *= 1000; /* convert from Km to m */
 
-    rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
-               _directfromangle((int)p_src->dir), (int)p_src->dir,\
-               _directfromangle((int)angle), (int)angle,\
-              (int)delta, (int)distance_1_2);
+//    rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
+//               _directfromangle((int)p_src->dir), (int)p_src->dir,\
+//               _directfromangle((int)angle), (int)angle,\
+//              (int)delta, (int)distance_1_2);
 
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }
