@@ -97,7 +97,7 @@ void load_param_from_fl(void)
 
 }
 
-void  write_default_param(void)
+void  write_def_param(void)
 {
 	cfg_param_t  flash_param;
 
@@ -117,7 +117,7 @@ void  write_default_param(void)
 
 }
 
-FINSH_FUNCTION_EXPORT(write_default_param, debug:write default  param to flash);
+FINSH_FUNCTION_EXPORT(write_def_param, debug:write default  param to flash);
 
 
 void param_init(void)
@@ -130,7 +130,7 @@ void param_init(void)
 			{
 				p_cms_param = &cms_param;
 				load_default_param(p_cms_param);			
-				write_default_param();
+				write_def_param();
 			}
 		else load_param_from_fl();
 	
@@ -235,7 +235,7 @@ int param_set(const char *param, uint16_t value)
 	drv_fls_read(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
 
 	pos = get_param_pos(param);
-
+/*
 	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp"))
 		if(value > 0xff)
 			{
@@ -243,6 +243,7 @@ int param_set(const char *param, uint16_t value)
 				rt_kprintf("max value is 0xff");
 				return -1;
 			}
+			*/
 	switch(pos){
 
 		case 0:

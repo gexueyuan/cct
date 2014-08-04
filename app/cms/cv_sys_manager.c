@@ -105,10 +105,10 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 if (p_msg->argc == VSA_ID_CRD){
                     type = HI_OUT_CRD_ALERT;
                 }
-                else if (p_msg->argc == VSA_ID_CRD){
+                else if (p_msg->argc == VSA_ID_VBD){
                     type = HI_OUT_VBD_ALERT;
                 }
-                else if (p_msg->argc == VSA_ID_CRD){
+                else if (p_msg->argc == VSA_ID_EBD){
                     type = HI_OUT_EBD_ALERT;
                 }
                 
@@ -205,6 +205,14 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 p_sys->led_blink_cnt[LED_RED] = 0;
                 p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
                 break;
+
+			case HI_OUT_EBD_ALERT:
+                voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
+                p_sys->led_blink_duration[LED_RED] = 10;
+                p_sys->led_blink_period[LED_RED] = 15;
+                p_sys->led_blink_cnt[LED_RED] = 0;
+                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+                break;	
 
             case HI_OUT_CANCEL_ALERT:
                 p_sys->led_blink_duration[LED_RED] = 0;

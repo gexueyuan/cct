@@ -62,6 +62,11 @@ typedef struct _vsa_envar{
     vam_stastatus_t local;
     vam_stastatus_t remote;
 
+	/*List head*/	
+    list_head_t crd_list;	
+    list_head_t ebd_list;
+    list_head_t vbd_list;
+
     /* os related */
     rt_thread_t task_vsa;
     rt_mq_t queue_vsa;
