@@ -98,7 +98,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 
         case SYS_MSG_START_ALERT:
             rt_kprintf("%s:alert start!!!.\n", __FUNCTION__);
-            rt_mq_send(p_sys->queue_sys_hi, p_msg, sizeof(sys_msg_t));
+            //rt_mq_send(p_sys->queue_sys_hi, p_msg, sizeof(sys_msg_t));
             {
                 uint32_t type = 0;
 

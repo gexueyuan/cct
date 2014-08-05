@@ -57,38 +57,14 @@ void vsa_gps_status_update(void *parameter)
 
 
 /* BEGIN: Added by wanglei, 2014/8/1 */
-/* TBD. 请葛学元完善处理 */
+/* modified by gexueyuan,2014/08/05 */
 void vsa_peer_alarm_update(void *parameter)
 {
-    vam_stastatus_t *p_alert = (vam_stastatus_t *)parameter;
-    uint16_t peer_alert;
 
-    /* process peer alarm msg */
-    if(p_alert->alert_mask & VAM_ALERT_MASK_VBD)
-    {
-        /* receive peer active VBD alert msg */
-        
-    }
-    else
-    {
-        /* receive peer cancle VBD alert msg */
-
-        /* get peer alert status from vam->neighbour_list */
-        vam_get_peer_alert_status(&peer_alert); 
-        if(!(peer_alert & VAM_ALERT_MASK_VBD))
-        {
-            /* all neighbour canceled their VBD alert, then stop local voice and led alter */
-            rt_kprintf("vsa_peer_alarm_update: cancle peer vbd alert\r\n");
-        }
-        else
-        {
-            rt_kprintf("vsa_peer_alarm_update: can't cancle vbd alert\r\n");
-        }
-    }
-
-    /* process VAM_ALERT_MASK_EBD */
-
-    
+	vam_stastatus_t *p_sta = (vam_stastatus_t *)parameter;
+	vsa_envar_t *p_vsa = &p_cms_envar->vsa;
+    memcpy(&p_vsa->remote, p_sta, sizeof(vam_stastatus_t));
+    vsa_add_event_queue(p_vsa, VSA_MSG_ALARM_UPDATE, 0,0,NULL);   
 }
 /* END:   Added by wanglei, 2014/8/1 */
 
@@ -241,18 +217,14 @@ static int ebd_judge(vsa_envar_t *p_vsa)
 {
 
 	
-    int32_t dis_actual, dis_alert;
+    int32_t dis_actual;
 
-    /* put the beginning only in order to output debug infomations */
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
-    dis_alert = (int32_t)((p_vsa->local.speed*2.0f - p_vsa->remote.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
-    /* end */
+	    /* remote is behind of local */
+    if (dis_actual <= 0)
+        return 0;
 
     if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold){
-        return 0;
-    }
-
-    if (p_vsa->local.speed <= p_vsa->remote.speed){
         return 0;
     }
 
@@ -260,26 +232,47 @@ static int ebd_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-    /* remote is behind of local */
-    if (dis_actual <= 0){
-        return 0;
-    }
 
-    if (dis_actual > dis_alert){
-        return 0;
-    }
-
-	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
-
-	rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
+	rt_kprintf("Emergency Vehicle  Alert !!! Id:%d%d%d%d\n",p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
 
     return 1;
 
 }
 static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 {
-	ebd_judge(p_vsa);
-    return 1;
+    int err = 1;  /* '1' represent is not handled. */	
+    uint16_t peer_alert;
+    sys_msg_t *p_msg = (sys_msg_t *)arg;
+	vam_get_peer_alert_status(&peer_alert);
+	switch(p_msg->id){
+		case VSA_MSG_LOCAL_UPDATE:
+			break;
+		case VSA_MSG_ALARM_UPDATE:
+			if((peer_alert&&(1<<VAM_ALERT_MASK_EBD))&&(ebd_judge(p_vsa)>0))
+				{
+					  /* danger is detected */    
+                    if (p_vsa->alert_pend & (1<<VSA_ID_EBD)){
+                    /* do nothing */    
+                }
+                    else{
+                    /* inform system to start alert */
+                        p_vsa->alert_pend |= (1<<VSA_ID_EBD);
+                        sys_add_event_queue(&p_cms_envar->sys, \
+                                            SYS_MSG_START_ALERT, 0, VSA_ID_EBD, NULL);
+                    }
+				}
+				else if (p_vsa->alert_pend & (1<<VSA_ID_EBD)){
+                    /* inform system to stop alert */
+                        p_vsa->alert_pend &= ~(1<<VSA_ID_EBD);
+                        sys_add_event_queue(&p_cms_envar->sys, \
+                                            SYS_MSG_STOP_ALERT, 0, VSA_ID_EBD, NULL);
+                    }
+					
+		default:
+			break;
+	}
+
+    return err;
 }
 
 
@@ -303,35 +296,47 @@ static int vbd_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-	rt_kprintf("Vehicle Break Down Alert!!! Id:%d%d%d%d\n",p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
+	rt_kprintf("Vehicle Breakdown Alert!!! Id:%d%d%d%d\n",p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
 
     return 1;
 
 }
 static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 {
-    int err = 1;  /* '1' represent is not handled. */
-    sys_msg_t *p_msg = (sys_msg_t *)arg;	
-   
-    switch(p_msg->id){
-        case VSA_MSG_LOCAL_UPDATE:
-            err = 0;
-            break;
-            
-        case VSA_MSG_PEER_UPDATE:
-				vbd_judge( p_vsa);
-            break;
-            
-        default:
-            break;
+	int err = 1;  /* '1' represent is not handled. */ 
+	uint16_t peer_alert;
+	sys_msg_t *p_msg = (sys_msg_t *)arg;
+	vam_get_peer_alert_status(&peer_alert);
+	switch(p_msg->id){
+		  case VSA_MSG_LOCAL_UPDATE:
+			  break;
+		  case VSA_MSG_ALARM_UPDATE:
+			  if((peer_alert&&(1<<VAM_ALERT_MASK_VBD))&&(vbd_judge(p_vsa)>0))
+				  {
+						/* danger is detected */	
+					  if (p_vsa->alert_pend & (1<<VSA_ID_VBD)){
+					  /* do nothing */	  
+				  }
+					  else{
+					  /* inform system to start alert */
+						  p_vsa->alert_pend |= (1<<VSA_ID_VBD);
+						  sys_add_event_queue(&p_cms_envar->sys, \
+											  SYS_MSG_START_ALERT, 0, VSA_ID_VBD, NULL);
+					  }
+				  }
+				  else if (p_vsa->alert_pend & (1<<VSA_ID_VBD)){
+					  /* inform system to stop alert */
+						  p_vsa->alert_pend &= ~(1<<VSA_ID_VBD);
+						  sys_add_event_queue(&p_cms_envar->sys, \
+											  SYS_MSG_STOP_ALERT, 0, VSA_ID_VBD, NULL);
+					  }
+					  
+		  default:
+			  break;
+	  }
+	
+	  return err;
 
-
-    	}
-
-
-
-
-    return err;
 }
 
 static void vsa_default_proc(vsa_envar_t *p_vsa, void *arg)

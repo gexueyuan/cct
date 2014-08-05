@@ -58,6 +58,12 @@ KEY_ENTER PA0  (WKUP)
 #define key_down_GETVALUE()   GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_12)
 
 
+static struct rtgui_key *key;
+static uint8_t keycnt = 0xff;
+
+extern int32_t vam_active_alert(uint32_t alerttype);
+extern int32_t vam_cancel_alert(uint32_t alerttype);
+
 /* 使用面向对象的方式，将按键所用到的所有元素进行打包 */
 struct rtgui_key
 {
@@ -78,7 +84,6 @@ struct rtgui_key
 	
 };
 
-static struct rtgui_key *key;
 
 
 static void GPIO_Configuration(void)
@@ -221,18 +226,23 @@ static void key_thread_entry(void *parameter)
 	{	
 		if (((key->key_get)==C_UP_KEY) && ((key->key_flag) & C_FLAG_SHORT))
 		{	
+			if(keycnt)
+				{
+					rt_kprintf("Active Vihicle Break Down Alert\n");
+					vam_active_alert(0);
+				}
+			else{
+					rt_kprintf("Stop Vihicle Break Down Alert\n");
+					vam_cancel_alert(0);
+				}
+			keycnt = ~keycnt;
 			
-			//rt_kprintf("key = %x \n",key->key_get);
-			rt_kprintf("key = %x \n  active Vihicle Break Down Alert\n",key->key_get);
-			vam_active_alert(0);
-
 		}	
 		
 		if (((key->key_get)==C_DOWN_KEY) && ((key->key_flag) & C_FLAG_SHORT))
 		{	
 			
-			rt_kprintf("key = %x \n  stop Vihicle Break Down Alert\n",key->key_get);
-			vam_cancel_alert(0);
+			rt_kprintf("key = %x \n pressed\n",key->key_get);
 		}	
 		
 	}	

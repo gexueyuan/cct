@@ -74,9 +74,11 @@ void load_default_param(cfg_param_t *param)
     param->vam.bsm_boardcast_saftyfactor = 5;  /* 1~10 */
     param->vam.bsm_pause_mode = 1;  /* 0 - disable, 1 - enable */
     param->vam.bsm_pause_hold_time = 5;  /* unit:s */
-    param->vam.evam_hops = 3; 
     param->vam.bsm_boardcast_period = 100;  /* 100~3000, unit:ms, min accuracy :10ms */
-
+	
+    param->vam.evam_hops = 3; 
+	param->vam.evam_broadcast_type = 2;
+	param->vam.evam_broadcast_peroid = 50;
 
     /******************** VSA *********************/
     param->vsa.danger_detect_speed_threshold = 30;  /* unit: km/h */
