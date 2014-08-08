@@ -22,6 +22,7 @@
 
 #define HUMAN_ITERFACE_DEFAULT         SECOND_TO_TICK(1)
 
+#define HUMAN_ITERFACE_VOC         	   SECOND_TO_TICK(3)
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
@@ -85,6 +86,8 @@ rt_err_t hi_add_event_queue(sys_envar_t *p_sys,
 
 void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
+	uint32_t type = 0;
+
     switch(p_msg->id){
         case SYS_MSG_INITED:
             rt_kprintf("%s: initialize complete\n", __FUNCTION__);
@@ -100,7 +103,6 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             rt_kprintf("%s:alert start!!!.\n", __FUNCTION__);
             //rt_mq_send(p_sys->queue_sys_hi, p_msg, sizeof(sys_msg_t));
             {
-                uint32_t type = 0;
 
                 if (p_msg->argc == VSA_ID_CRD){
                     type = HI_OUT_CRD_ALERT;
@@ -119,7 +121,20 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             
         case SYS_MSG_STOP_ALERT:
             rt_kprintf("%s:alert stop.\n", __FUNCTION__);
-            hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+			
+				//uint32_t type = 0;
+			
+				if (p_msg->argc == VSA_ID_CRD){
+					type = HI_OUT_CANCEL_ALERT;
+				}
+				else if (p_msg->argc == VSA_ID_VBD){
+					type = HI_OUT_VBD_CANCEL;
+				}
+				else if (p_msg->argc == VSA_ID_EBD){
+					type = HI_OUT_EBD_CANCEL;
+				}
+				//don't distinguish  message of  alert canceling   for the time being
+            	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
             break;
 
         case SYS_MSG_GPS_UPDATE:
@@ -185,12 +200,34 @@ void timer_human_interface_callback(void* parameter)
 #endif
 }
 
+void timer_out_vsa_process(void* parameter)
+{
+	int  timevalue;
+	
+	timevalue = HUMAN_ITERFACE_VOC;
+	
+	vsa_envar_t* p_vsa  = (vsa_envar_t*)parameter;
+
+	if(p_vsa->alert_pend & (1<<VSA_ID_EBD))	
+		voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);// 3 notice + vioce
+
+	else if(p_vsa->alert_pend & (1<<VSA_ID_VBD))
+		voc_play(16000, (uint8_t *)voice_16k_8bits+3200, voice_16k_8bitsLen-3200);// 2 notice + vioce
+
+	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD))	
+		voc_play(16000, (uint8_t *)voice_16k_8bits+6400, voice_16k_8bitsLen-6400);// 1 notice + vioce
+
+	rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
+}
+
+
 void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
     if (p_msg->id == SYS_MSG_HI_OUT_UPDATE){
         switch(p_msg->argc){
             case HI_OUT_CRD_ALERT:
-                voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
+               // voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
+                rt_timer_start(p_cms_envar->sys.timer_voc);
                 p_sys->led_blink_duration[LED_RED] = 0xFFFF;
                 p_sys->led_blink_period[LED_RED] = 15;
                 p_sys->led_blink_cnt[LED_RED] = 0;
@@ -199,7 +236,8 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 
                 break;
             case HI_OUT_VBD_ALERT:
-                voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
+               // voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
+                rt_timer_start(p_cms_envar->sys.timer_voc);
                 p_sys->led_blink_duration[LED_RED] = 10;
                 p_sys->led_blink_period[LED_RED] = 15;
                 p_sys->led_blink_cnt[LED_RED] = 0;
@@ -207,7 +245,8 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 break;
 
 			case HI_OUT_EBD_ALERT:
-                voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
+              //  voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
+              	rt_timer_start(p_cms_envar->sys.timer_voc);
                 p_sys->led_blink_duration[LED_RED] = 10;
                 p_sys->led_blink_period[LED_RED] = 15;
                 p_sys->led_blink_cnt[LED_RED] = 0;
@@ -215,6 +254,8 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 break;	
 
             case HI_OUT_CANCEL_ALERT:
+				if(p_cms_envar->vsa.alert_pend == 0)
+					rt_timer_stop(p_cms_envar->sys.timer_voc);
                 p_sys->led_blink_duration[LED_RED] = 0;
                 p_sys->led_blink_period[LED_RED] = 0;
                 p_sys->led_blink_cnt[LED_RED] = 0;
@@ -296,6 +337,8 @@ void rt_hi_thread_entry(void *parameter)
 void sys_init(void)
 {
     sys_envar_t *p_sys = &p_cms_envar->sys;
+	
+	vsa_envar_t *p_vsa = &p_cms_envar->vsa;
 
     /* object for sys */
     p_sys->queue_sys_mng = rt_mq_create("q-sysm", sizeof(sys_msg_t), SYS_QUEUE_SIZE, RT_IPC_FLAG_FIFO);
@@ -321,6 +364,10 @@ void sys_init(void)
         HUMAN_ITERFACE_DEFAULT,RT_TIMER_FLAG_PERIODIC); 					
     RT_ASSERT(p_sys->timer_hi != RT_NULL);
 
+    p_sys->timer_voc= rt_timer_create("tm-voc",timer_out_vsa_process,p_vsa,\
+        1,RT_TIMER_FLAG_PERIODIC); 					
+    RT_ASSERT(p_sys->timer_hi != RT_NULL);
+
     rt_kprintf("sysc module initial\n");
 }
 
@@ -329,8 +376,19 @@ void sys_init(void)
 void test_alert(void)
 {
     hi_add_event_queue(&p_cms_envar->sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_VBD_ALERT, 0);
+
+	p_cms_envar->vsa.alert_pend |= VSA_ID_CRD;
 }
 FINSH_FUNCTION_EXPORT(test_alert, debug: testing alert voice and led);
 
+void start_voc( uint8_t  type)
+{
+
+     rt_timer_start(p_cms_envar->sys.timer_voc);
+
+}
+	
+
+FINSH_FUNCTION_EXPORT(start_voc, debug: testing alert voice);
 
 

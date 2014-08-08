@@ -82,8 +82,11 @@ enum HI_OUT_TYPE{
     HI_OUT_GPS_CAPTURED,
     HI_OUT_GPS_LOST,
     HI_OUT_CRD_ALERT,
+    HI_OUT_CRD_CANCEL,
     HI_OUT_VBD_ALERT,
+    HI_OUT_VBD_CANCEL,
     HI_OUT_EBD_ALERT,
+    HI_OUT_EBD_CANCEL,
     HI_OUT_CANCEL_ALERT,
 };
 
@@ -153,6 +156,7 @@ typedef struct _sys_envar{
     rt_mq_t queue_sys_hi;
 
     rt_timer_t timer_hi;
+    rt_timer_t timer_voc;
     
 }sys_envar_t;
 
