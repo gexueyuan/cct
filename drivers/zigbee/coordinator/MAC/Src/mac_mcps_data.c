@@ -707,7 +707,7 @@ void mac_process_data_frame(buffer_t *buf_ptr)
 									}
 								}			
 								
-								double distance = vsm_get_relative_pos_immediate(&(p_cms_envar->vam.local),&(gNwkFrameHeader_p->field.payload[7]));			
+								int32_t distance = (int32_t)vsm_get_relative_pos_immediate(&(p_cms_envar->vam.local),&(gNwkFrameHeader_p->field.payload[7]));			
 								
 								if (gNwkFrameHeader_p->radius > 1 && distance >0)  
 								{

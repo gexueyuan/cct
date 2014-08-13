@@ -81,6 +81,9 @@ int rt_application_init(void)
 	rt_components_init();
 	rt_platform_init();
 
+	rt_kprintf("\n\n");
+	rt_kprintf("app build %s %s\n\n",__TIME__,__DATE__);
+
     rt_kprintf("system clock: %d\n", SystemCoreClock);
 
     tid = rt_thread_create("t-init",

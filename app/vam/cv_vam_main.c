@@ -174,11 +174,8 @@ void vam_init(void)
     
     memset(p_vam, 0, sizeof(vam_envar_t));
     memcpy(&p_vam->working_param, &p_cms_param->vam, sizeof(vam_config_t));
-	  p_vam->local.pid[0] = 0;
-		p_vam->local.pid[1] = 0;
-		p_vam->local.pid[2] = 0;
-		p_vam->local.pid[3] = 1;
-    
+    memcpy(p_vam->local.pid, p_cms_param->pid, RCP_TEMP_ID_LEN);
+
     INIT_LIST_HEAD(&p_vam->neighbour_list);
     INIT_LIST_HEAD(&p_vam->sta_free_list);
     for(i = 0;i< VAM_NEIGHBOUR_MAXNUM;i++){

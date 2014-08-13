@@ -854,8 +854,8 @@ static void mac_process_tal_tx_status(retval_t tx_status,  frame_info_t *frame)
            // if (tx_status == MAC_SUCCESS)
             {
 
-				NwkState = NWK_MODULE_NONE;
-				//bmm_buffer_free(frame->buffer_header);
+						NwkState = NWK_MODULE_NONE;
+						bmm_buffer_free(frame->buffer_header);
 				//mac_sleep_trans();
 
 					//pal_led(LED_0, LED_ON);
@@ -876,7 +876,7 @@ static void mac_process_tal_tx_status(retval_t tx_status,  frame_info_t *frame)
             break;
 
         case NWK_DATA_BROADCAST_RELAY_N:
-
+						bmm_buffer_free(frame->buffer_header);
             break;
 
         default:

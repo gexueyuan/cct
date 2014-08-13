@@ -96,7 +96,9 @@ uint8_t blackListCount = 0;
 uint16_t whiteTable[64];
 uint64_t whiteBitMap = 0;
 uint8_t whiteListCount = 0;
-
+bool isOUtNet = 1;
+uint8_t outDebug[20];
+int zigbeeDistance;
 
 int8_t add_black_list(uint16_t srcAddr)
 {
@@ -213,7 +215,7 @@ uint8_t pal_sio_init(uint8_t UARTx)
 	UARTx = UARTx;
 	return 0;
 }
-bool isOUtNet = 1;
+
 void out_net()
 {
 	isOUtNet = !isOUtNet;
@@ -224,10 +226,10 @@ uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t
 	rcp_rxinfo_t rxbd;
 	static uint8_t sumCount = 0;
 	static uint8_t preSeq;
-	static uint32_t lostSeqSum = 0;
+	static uint16_t lostSeqSum = 0;
 	static uint8_t maxAdjLostSeq = 0;
 	uint8_t adjLostSeq=0;
-	uint32_t packetErrorRate=0;
+	uint16_t packetErrorRate=0;
 
 	
 	rxbd.src[0] = srcAddr;
@@ -262,14 +264,17 @@ uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t
 			sumCount = 0;
 			packetErrorRate = lostSeqSum*1000/(255+lostSeqSum);
 		}		
-		
+		/*
 		if(sumCount != 0)
 		    rt_kprintf("src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
 		else 
 			  rt_kprintf("                     src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
+*/
 	}
 	else sumCount = 0;
+
 	vam_rcp_recv(&rxbd, (uint8_t *)data, length);
+
 
 	return 1;
 }
@@ -279,7 +284,8 @@ int32_t wnet_dataframe_send(rcp_txinfo_t *txinfo,
 {
     buffer_t *buffer_header;
     uint8_t *nlde_data_req;
-        
+    if (uart_0_buffer.rx_buf_head == NULL)
+    	return -1;
      AppFrameHeader_t *app = (AppFrameHeader_t *)uart_0_buffer.rx_buf_head;
     *uart_0_buffer.rx_buf_head = 0xF1;
     *(uart_0_buffer.rx_buf_head+1) = 0x00;
@@ -307,8 +313,10 @@ int32_t wnet_dataframe_send(rcp_txinfo_t *txinfo,
     					
     buffer_header = bmm_buffer_alloc(LARGE_BUFFER_SIZE);
     if (buffer_header == NULL)
-    	return 0;
-    	
+		{
+			uart_0_buffer.rx_buf_head = NULL;
+    	return -1;
+		}
     nlde_data_req = BMM_BUFFER_POINTER(buffer_header);
     uart_0_buffer.rx_buf_head = (nlde_data_req) + (LARGE_BUFFER_SIZE - FCS_LEN - TRANSPARENT_IO_BUF_SIZE);
     uart_0_buffer.rx_buf[0] = (uint8_t *)buffer_header;							
@@ -606,7 +614,7 @@ void bc_data_cb_vanet(frame_info_t *transmit_frame)
 		gNwkPassiveAckTable.table[index].end = false;
 		gNwkPassiveAckTable.table[index].reTryTimes = 0;
 		nwkFreePassiveAck(transmit_frame->NwkFrameHeader->srcAddr, transmit_frame->NwkFrameHeader->sequenceNumber);
-		bmm_buffer_free(transmit_frame->buffer_header);
+		//bmm_buffer_free(transmit_frame->buffer_header);
 		//NwkState = NWK_MODULE_NONE;//if为1时原本是释掉的
 		mac_sleep_trans();
 	}

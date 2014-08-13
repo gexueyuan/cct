@@ -593,7 +593,7 @@ void nlde_data_request (uint8_t *msg)
 
 		nwk_frame_ptr = transmit_frame;
 
-		if (ndr.routeType != APP_ROUTE_BROADCAST)
+		if (ndr.routeType != APP_ROUTE_BROADCAST && transmit_frame->NwkFrameHeader->radius > 1)
 		{
 			if (nwkNewPassiveAck(transmit_frame, gNwk_nib.networkAddress, gNwk_nib.networkAddress, transmit_frame->NwkFrameHeader->sequenceNumber) == false)
 			{
@@ -669,7 +669,7 @@ void nlde_data_request (uint8_t *msg)
 				factor = 0.1;
 			else factor = 1-factor;
 			uint32_t timeInterval;
-			timeInterval = (cms_param.vsa.danger_alert_period * cms_param.vam.evam_hops * 2)*factor;
+			timeInterval = (cms_param.vsa.danger_alert_period)*factor;
 			//pal_timer_delay(timeInterval*1000);
 
 			index = __CLZ(__RBIT(~broadDelayBitmap));

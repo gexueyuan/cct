@@ -23,6 +23,8 @@
 #define HUMAN_ITERFACE_DEFAULT         SECOND_TO_TICK(1)
 
 #define HUMAN_ITERFACE_VOC         	   SECOND_TO_TICK(3)
+
+#define HUMAN_ITERFACE_GPS_VOC         SECOND_TO_TICK(5)
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
@@ -209,7 +211,7 @@ void timer_out_vsa_process(void* parameter)
 	vsa_envar_t* p_vsa  = (vsa_envar_t*)parameter;
 
 	if(p_vsa->alert_pend & (1<<VSA_ID_EBD))	
-		voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);// 3 notice + vioce
+		voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);// 3 notice + vioce,EBD最优先,同时报警选择EBD,VBD次之
 
 	else if(p_vsa->alert_pend & (1<<VSA_ID_VBD))
 		voc_play(16000, (uint8_t *)voice_16k_8bits+3200, voice_16k_8bitsLen-3200);// 2 notice + vioce
@@ -220,6 +222,10 @@ void timer_out_vsa_process(void* parameter)
 	rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
 }
 
+void timer_gps_hi(void* parameter)
+{	
+	voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
+}
 
 void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
@@ -270,13 +276,15 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 break;
 
             case HI_OUT_GPS_LOST:
-                voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
+                //voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
+               	rt_timer_start(p_cms_envar->sys.timer_gps);
                 p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 p_sys->led_blink_period[LED_GREEN] = 20;
                 p_sys->led_blink_cnt[LED_GREEN] = 0;
                 break;
 
             case HI_OUT_GPS_CAPTURED:
+				rt_timer_stop(p_cms_envar->sys.timer_gps);
                 p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
                 p_sys->led_blink_cnt[LED_GREEN] = 0;
@@ -367,6 +375,10 @@ void sys_init(void)
     p_sys->timer_voc= rt_timer_create("tm-voc",timer_out_vsa_process,p_vsa,\
         1,RT_TIMER_FLAG_PERIODIC); 					
     RT_ASSERT(p_sys->timer_hi != RT_NULL);
+
+    p_sys->timer_gps= rt_timer_create("tm-gps",timer_gps_hi,NULL,\
+        HUMAN_ITERFACE_GPS_VOC,RT_TIMER_FLAG_ONE_SHOT); 					
+    RT_ASSERT(p_sys->timer_gps != RT_NULL);
 
     rt_kprintf("sysc module initial\n");
 }

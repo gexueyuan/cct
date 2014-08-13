@@ -157,7 +157,7 @@ void param_get(void)
 
     rt_kprintf("vam.evam_hops(vam.eh)=%d\n", p_cms_param->vam.evam_hops);
     rt_kprintf("vam.evam_broadcast_type(vam.ebt)=%d\n", p_cms_param->vam.evam_broadcast_type);
-    rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d\n\n", p_cms_param->vam.evam_broadcast_peroid);
+    rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d (ms)\n\n", p_cms_param->vam.evam_broadcast_peroid);
 
     rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (m/s)\n", p_cms_param->vsa.danger_detect_speed_threshold);
     rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);

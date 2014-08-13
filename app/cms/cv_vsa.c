@@ -215,8 +215,7 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
 
 static int ebd_judge(vsa_envar_t *p_vsa)
 {
-
-	
+//#if 0
     int32_t dis_actual;
 
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
@@ -231,10 +230,8 @@ static int ebd_judge(vsa_envar_t *p_vsa)
     if (vam_get_peer_relative_dir(p_vsa->remote.pid) < 0){
         return 0;
     }
-
-
+//#endif
 	rt_kprintf("Emergency Vehicle  Alert !!! Id:%d%d%d%d\n",p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
-
     return 1;
 
 }
@@ -246,9 +243,11 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 	vam_get_peer_alert_status(&peer_alert);
 	switch(p_msg->id){
 		case VSA_MSG_LOCAL_UPDATE:
+			//if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold)&&()
+			//	vam_active_alert(1);
 			break;
 		case VSA_MSG_ALARM_UPDATE:
-			if((peer_alert&&(1<<VAM_ALERT_MASK_EBD))&&(ebd_judge(p_vsa)>0))
+			if((peer_alert&VAM_ALERT_MASK_EBD)&&(ebd_judge(p_vsa)>0))
 				{
 					  /* danger is detected */    
                     if (p_vsa->alert_pend & (1<<VSA_ID_EBD)){
@@ -267,6 +266,7 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
                         sys_add_event_queue(&p_cms_envar->sys, \
                                             SYS_MSG_STOP_ALERT, 0, VSA_ID_EBD, NULL);
                     }
+				break;
 					
 		default:
 			break;
@@ -278,7 +278,7 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 
 static int vbd_judge(vsa_envar_t *p_vsa)
 {
-	
+//#if 0
     int32_t dis_actual;
 
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);// relative position
@@ -295,9 +295,8 @@ static int vbd_judge(vsa_envar_t *p_vsa)
     if (dis_actual <= 0){
         return 0;
     }
-
+//#endif
 	rt_kprintf("Vehicle Breakdown Alert!!! Id:%d%d%d%d\n",p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
-
     return 1;
 
 }
@@ -311,7 +310,7 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 		  case VSA_MSG_LOCAL_UPDATE:
 			  break;
 		  case VSA_MSG_ALARM_UPDATE:
-			  if((peer_alert&&(1<<VAM_ALERT_MASK_VBD))&&(vbd_judge(p_vsa)>0))
+			  if((peer_alert&VAM_ALERT_MASK_VBD)&&(vbd_judge(p_vsa)>0))
 				  {
 						/* danger is detected */	
 					  if (p_vsa->alert_pend & (1<<VSA_ID_VBD)){
@@ -330,7 +329,7 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 						  sys_add_event_queue(&p_cms_envar->sys, \
 											  SYS_MSG_STOP_ALERT, 0, VSA_ID_VBD, NULL);
 					  }
-					  
+				break;  
 		  default:
 			  break;
 	  }

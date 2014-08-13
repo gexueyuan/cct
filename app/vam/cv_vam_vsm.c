@@ -137,13 +137,23 @@ void vsm_start_evam_broadcast(vam_envar_t *p_vam)
     ticks = MS_TO_TICK(period);
     rt_timer_control(p_vam->timer_send_evam, RT_TIMER_CTRL_SET_TIME, &ticks);
     rt_timer_start(p_vam->timer_send_evam);
+
+    /* pause sending bsm msg */
+    if ((p_vam->working_param.bsm_pause_mode == 1) && (!(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)))
+    {
+        p_vam->flag |= VAM_FLAG_TX_BSM_PAUSE;
+        period = p_vam->working_param.bsm_pause_hold_time;
+        ticks = SECOND_TO_TICK(period);      
+        rt_timer_control(p_vam->timer_bsm_pause, RT_TIMER_CTRL_SET_TIME, &ticks);
+        rt_timer_start(p_vam->timer_bsm_pause);
+    }
 }
 
 void timer_send_evam_callback(void* parameter)
 {
     vam_envar_t *p_vam = (vam_envar_t *)parameter;
     static uint8_t count = VAM_NO_ALERT_EVAM_TX_TIMES;
-    if (p_vam->flag&VAM_FLAG_TX_BSM)
+    if (p_vam->flag&VAM_FLAG_TX_EVAM)
     {
         vam_add_event_queue(p_vam, VAM_MSG_RCPTX, 0, RCP_MSG_ID_EVAM, NULL);
         /* 所有alter已取消 */
@@ -154,6 +164,13 @@ void timer_send_evam_callback(void* parameter)
             {
                 p_vam->flag &= ~VAM_FLAG_TX_EVAM;
                 rt_timer_stop(p_vam->timer_send_evam);
+
+                /* don't wait for timer_bsm_pause. restart to send bsm */
+                if(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)
+                {
+                    p_vam->flag &= ~VAM_FLAG_TX_BSM_PAUSE;
+                    rt_timer_stop(p_vam->timer_bsm_pause);
+                }
             }
         }
         else

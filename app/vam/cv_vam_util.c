@@ -196,7 +196,7 @@ const char *_directfromangle(int angle)
     return dir[i];
 }
 
-
+extern int zigbeeDistance;
 double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
 {
     double lat1, lng1, lat2, lng2, lat3, lng3;
@@ -235,7 +235,7 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
     lat3 = lat1;
     lng3 = lng2;
 
-    distance_1_2 = getDistanceVer2(lat1, lng1, lat2, lng2);
+    zigbeeDistance = distance_1_2 = getDistanceVer2(lat1, lng1, lat2, lng2);
     distance_2_3 = getDistanceVer2(lat2, lng2, lat3, lng3);
     angle = acos(distance_2_3/distance_1_2)*180/PI;
 
@@ -274,11 +274,6 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
     }
 
     distance_1_2 *= 1000; /* convert from Km to m */
-
-//    rt_kprintf("My head:%s(%d), Your pos:%s(%d); Our delta:%d, distance:%d\n", \
-//               _directfromangle((int)p_src->dir), (int)p_src->dir,\
-//               _directfromangle((int)angle), (int)angle,\
-//              (int)delta, (int)distance_1_2);
 
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }
@@ -347,11 +342,12 @@ double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
 				   _directfromangle((int)angle), (int)angle,\
 				  (int)delta, (int)distance_1_2);
 */
+//#if 0		
     rt_kprintf("My head:%s(%d),ID:%d%d%d%d, Your pos:%s(%d),ID:%d%d%d%d, Our delta:%d, distance:%d\n", \
                _directfromangle((int)p_src->dir), (int)p_src->dir,p_src->pid[0],p_src->pid[1],p_src->pid[2],p_src->pid[3],\
                _directfromangle((int)p_dest->dir), (int)p_dest->dir,p_dest->pid[0],p_dest->pid[1],p_dest->pid[2],p_dest->pid[3],\
               (int)delta, (int)distance_1_2);
-
+//#endif
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }
 

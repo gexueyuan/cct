@@ -20,7 +20,8 @@
 #include <stm32f4xx.h>
 
 //#define HARDWARE_DVB_F401Disco  // STM32F401Disco development board
-#define HARDWARE_MODULE_V1     
+//#define HARDWARE_MODULE_V1     
+#define HARDWARE_MODULE_V2
 
 
 /* board configuration */
@@ -43,7 +44,7 @@
 // <o> Internal SRAM memory size[Kbytes] <8-64>
 #ifdef HARDWARE_DVB_F401Disco
 #define STM32_SRAM_SIZE         64
-#elif defined HARDWARE_MODULE_V1
+#elif defined(HARDWARE_MODULE_V1)||defined(HARDWARE_MODULE_V2)
 #define STM32_SRAM_SIZE         128
 #endif
 

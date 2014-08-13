@@ -18,6 +18,12 @@ typedef enum
 #define LED_RED  LED4
 #define LED_BLUE  LED5
 #define LED_GREEN  LED3
+#elif defined HARDWARE_MODULE_V2
+#define LEDn  3
+#define LED_RED  LED4
+#define LED_BLUE  LED3
+#define LED_GREEN  LED5
+
 
 
 #endif
@@ -39,7 +45,7 @@ typedef enum
 #define LED6_PIN                         GPIO_Pin_15
 #define LED6_GPIO_PORT                   GPIOD
 #define LED6_GPIO_CLK                    RCC_AHB1Periph_GPIOD
-#elif defined HARDWARE_MODULE_V1
+#elif defined(HARDWARE_MODULE_V1)||defined(HARDWARE_MODULE_V2)
 #define LED3_PIN                         GPIO_Pin_2
 #define LED3_GPIO_PORT                   GPIOC
 #define LED3_GPIO_CLK                    RCC_AHB1Periph_GPIOC  

@@ -54,9 +54,13 @@ KEY_STOP  PF10
 KEY_MENU  PF11
 KEY_ENTER PA0  (WKUP)
 */
+#ifdef HARDWARE_MODULE_V1
 #define key_up_GETVALUE()     GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11)
 #define key_down_GETVALUE()   GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_12)
-
+#elif defined(HARDWARE_MODULE_V2)
+#define key_up_GETVALUE()     GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0)
+#define key_down_GETVALUE()   GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1)
+#endif
 
 static struct rtgui_key *key;
 static uint8_t keycnt = 0xff;
@@ -91,8 +95,8 @@ static void GPIO_Configuration(void)
     GPIO_InitTypeDef GPIO_InitStructure;
 
     /* init gpio configuration */
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOF,
-                           ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
+                           
 
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
@@ -101,8 +105,11 @@ static void GPIO_Configuration(void)
 	#if LCD_VERSION!=1	//魔笛f4 使用上拉
     GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;	
 	#endif
+#ifdef HARDWARE_MODULE_V1	
     GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_11 | GPIO_Pin_12;
-                                   
+#elif defined(HARDWARE_MODULE_V2)  
+	GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_0 | GPIO_Pin_1;
+#endif
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 }

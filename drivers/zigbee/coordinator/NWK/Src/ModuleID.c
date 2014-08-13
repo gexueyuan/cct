@@ -35,7 +35,7 @@ const MODULE_CONFIG_INFO  ModuleDefaultConfig =
 
     
     {0xFF,0xFF,0xFF,0xFF, 0xFF, 0xFF, 0xFF, 0xFF},                              // IEEE_MacAddress;
-    0x0005,                  //unsigned short  wNwkNodeID;                      // 188,189    wNwkNodeID
+    0x0002,                  //unsigned short  wNwkNodeID;                      // 188,189    wNwkNodeID
     0x0058,                  //unsigned short  wMacPanID;                       // 190,191    MacLayer Pan Id
     //    0x0001,                  //unsigned short  wMacNodeID;                      // 192,193    MacLayer Node Id
     
@@ -51,7 +51,7 @@ const MODULE_CONFIG_INFO  ModuleDefaultConfig =
     BT_250K,               //unsigned char  byRfBaudRate;                     // 111    RF BaudRate Choose Register.
     0,                       //unsigned char  byRfSendPower;                    // 112    RF Send Power (mw)
     //    RF_BUFFER_SIZE,          //unsigned char  byRfBufSize;                // 113    RF Accept and Send buffer size. 
-    RF_CHANNEL_15,      	     //unsigned char  byRfChannelID;                    // 114    RF Channel Choose Register.
+    RF_CHANNEL_14,      	     //unsigned char  byRfChannelID;                    // 114    RF Channel Choose Register.
     //    DEFAULT_RF_FREQUENCY,    //unsigned char  byRfFrequency;              // 115    RF Frequency Register. 
     
     /* HPP Net Layer Setup */
