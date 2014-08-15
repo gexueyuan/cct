@@ -87,6 +87,7 @@ void vsa_start(void)
 static int crd_judge(vsa_envar_t *p_vsa)
 {
     int32_t dis_actual, dis_alert;
+	static int32_t dis_pre = 0;
 
     /* put the beginning only in order to output debug infomations */
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
@@ -94,26 +95,34 @@ static int crd_judge(vsa_envar_t *p_vsa)
     /* end */
 
     if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold){
+		
+		dis_pre = dis_actual;
         return 0;
     }
 
     if (p_vsa->local.speed <= p_vsa->remote.speed){
+		
+		dis_pre = dis_actual;
         return 0;
     }
 
     if (vam_get_peer_relative_dir(p_vsa->remote.pid) < 0){
+		
+		dis_pre = dis_actual;
         return 0;
     }
 
     /* remote is behind of local */
     if (dis_actual <= 0){
+		
+		dis_pre = dis_actual;
         return 0;
     }
 
     if (dis_actual > dis_alert){
         return 0;
     }
-
+	
 	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
 
 	rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);

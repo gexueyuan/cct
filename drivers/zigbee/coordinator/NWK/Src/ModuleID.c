@@ -51,7 +51,7 @@ const MODULE_CONFIG_INFO  ModuleDefaultConfig =
     BT_250K,               //unsigned char  byRfBaudRate;                     // 111    RF BaudRate Choose Register.
     0,                       //unsigned char  byRfSendPower;                    // 112    RF Send Power (mw)
     //    RF_BUFFER_SIZE,          //unsigned char  byRfBufSize;                // 113    RF Accept and Send buffer size. 
-    RF_CHANNEL_14,      	     //unsigned char  byRfChannelID;                    // 114    RF Channel Choose Register.
+    RF_CHANNEL_10,      	     //unsigned char  byRfChannelID;                    // 114    RF Channel Choose Register.
     //    DEFAULT_RF_FREQUENCY,    //unsigned char  byRfFrequency;              // 115    RF Frequency Register. 
     
     /* HPP Net Layer Setup */
