@@ -87,7 +87,6 @@ void vsa_start(void)
 static int crd_judge(vsa_envar_t *p_vsa)
 {
     int32_t dis_actual, dis_alert;
-	static int32_t dis_pre = 0;
 
     /* put the beginning only in order to output debug infomations */
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
@@ -96,26 +95,22 @@ static int crd_judge(vsa_envar_t *p_vsa)
 
     if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold){
 		
-		dis_pre = dis_actual;
         return 0;
     }
 
     if (p_vsa->local.speed <= p_vsa->remote.speed){
 		
-		dis_pre = dis_actual;
         return 0;
     }
 
     if (vam_get_peer_relative_dir(p_vsa->remote.pid) < 0){
 		
-		dis_pre = dis_actual;
         return 0;
     }
 
     /* remote is behind of local */
     if (dis_actual <= 0){
 		
-		dis_pre = dis_actual;
         return 0;
     }
 
@@ -130,6 +125,34 @@ static int crd_judge(vsa_envar_t *p_vsa)
     return 1;
 }
 
+static int crd_local_judge(vsa_envar_t *p_vsa)
+{
+	float relative_speed = 0;
+	static  int8_t  send_flag = 1;
+
+	relative_speed = p_vsa->local.speed - p_vsa->remote.speed;
+
+    if (p_vsa->remote.speed >= p_vsa->working_param.danger_detect_speed_threshold)		
+        return 0;
+
+	if(relative_speed <=0)
+		return 0;
+		
+	if(relative_speed > 100)		
+		vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
+	else if((relative_speed < 100)&&(relative_speed > 50))
+		{
+			if(send_flag == 1)
+				vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
+			send_flag = -send_flag;
+	   } 
+
+	return 1;
+
+}
+
+
+
 static int crd_proc(vsa_envar_t *p_vsa, void *arg)
 {
     int err = 1;  /* '1' represent is not handled. */
@@ -140,6 +163,9 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
     
     switch(p_msg->id){
         case VSA_MSG_LOCAL_UPDATE:
+			//rt_kprintf("update information in crd \n\n");
+			//vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
+			crd_local_judge(p_vsa);
             err = 0;
             break;
             
@@ -254,6 +280,7 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 		case VSA_MSG_LOCAL_UPDATE:
 			//if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold)&&()
 			//	vam_active_alert(1);
+			//rt_kprintf("update information in ebd \n\n");
 			break;
 		case VSA_MSG_ALARM_UPDATE:
 			if((peer_alert&VAM_ALERT_MASK_EBD)&&(ebd_judge(p_vsa)>0))
@@ -316,8 +343,6 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 	sys_msg_t *p_msg = (sys_msg_t *)arg;
 	vam_get_peer_alert_status(&peer_alert);
 	switch(p_msg->id){
-		  case VSA_MSG_LOCAL_UPDATE:
-			  break;
 		  case VSA_MSG_ALARM_UPDATE:
 			  if((peer_alert&VAM_ALERT_MASK_VBD)&&(vbd_judge(p_vsa)>0))
 				  {
