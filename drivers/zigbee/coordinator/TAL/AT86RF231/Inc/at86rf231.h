@@ -398,7 +398,7 @@
 #define SR_PA_LT   0x05, 0x30, 4
 
 /** Access parameters for sub-register PAD_IO in register RG_TRX_CTRL_0 */
-#define SR_PAD_IO   0x03, 0xc0, 6
+#define SR_PAD_IO   0x03, 0x80, 7
 
 /** Access parameters for sub-register PAD_IO_CLKM in register RG_TRX_CTRL_0 */
 #define SR_PAD_IO_CLKM   0x03, 0x30, 4

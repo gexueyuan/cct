@@ -448,6 +448,7 @@ static void trx_config(void)
     pal_trx_bit_write(SR_PAD_IO_CLKM, PAD_CLKM_2_MA);
     pal_trx_bit_write(SR_CLKM_SHA_SEL, CLKM_SHA_DISABLE);
     pal_trx_bit_write(SR_CLKM_CTRL, CLKM_NO_CLOCK);
+	
 
 #ifndef SW_CONTROLLED_CSMA
     /* After we have initialized a proper seed for rand(),

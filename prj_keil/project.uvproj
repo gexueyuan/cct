@@ -465,6 +465,11 @@
               <FileType>1</FileType>
               <FilePath>..\app\cms\cv_sys_sound_resource.c</FilePath>
             </File>
+            <File>
+              <FileName>bma250e.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\bsp\bma250e.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

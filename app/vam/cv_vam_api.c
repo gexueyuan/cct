@@ -91,9 +91,14 @@ int32_t vam_get_local_status(vam_stastatus_t *local)
 }
 
 
-
+/* 更新本车的状态信息（仅用于当VANET不支持内部解析本地GPS、加速度传感器等功能时） */
 int32_t vam_set_local_status(vam_stastatus_t *local)
 {
+    if(!local){
+        return -1;
+    }
+
+    memcpy(&(p_vam_envar->local), local, sizeof(vam_stastatus_t));
     return 0;
 }
 
@@ -289,3 +294,12 @@ void vam_alert(int mode, int type)
 }
 FINSH_FUNCTION_EXPORT(vam_alert, debug: vam alert send);
 /* END:   Added by wanglei, 2014/8/1 */
+
+void vam_gsnr_ebd_detected(uint8_t status)
+{
+    vam_envar_t *p_vam = p_vam_envar;
+    if(p_vam->evt_handler[VAM_EVT_GSNR_EBD_DETECT]){
+        (p_vam->evt_handler[VAM_EVT_GSNR_EBD_DETECT])(&p_vam->local);
+    }
+}
+

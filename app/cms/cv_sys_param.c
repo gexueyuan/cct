@@ -237,19 +237,30 @@ int param_set(const char *param, uint16_t value)
 	drv_fls_read(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
 
 	pos = get_param_pos(param);
-/*
-	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp"))
+
+	if(pos == -1)
+		{
+			rt_kprintf("invalid  parameter!!\n");
+			return -1;
+
+		}
+
+	if(strcmp(param,"vam.bbp")||strcmp(param,"vsa.dap")||strcmp(param,"vam.ebp"))
 		if(value > 0xff)
 			{
 				//value = 0xff;
 				rt_kprintf("max value is 0xff");
 				return -1;
 			}
-			*/
+			
 	switch(pos){
 
 		case 0:
-			if(value > 9999) value = 9999;
+			if(value > 9999)
+				{
+					rt_kprintf("invalid  ID!!\n");
+					return -1;
+				}	
 			cfg_param->pid[0] = value/1000;
 			cfg_param->pid[1] = (value%1000)/100;
 			cfg_param->pid[2] = ((value%1000)%100)/10;
@@ -325,9 +336,9 @@ int param_set(const char *param, uint16_t value)
 	err = drv_fls_write(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
 
 	if(err == -1)
-		rt_kprintf("param set error!!!\n");
+		rt_kprintf("parameter writing process error!!!\n");
 	else
-		rt_kprintf("param set success!\n");
+		rt_kprintf("parameter set success!\n");
 
 	rt_free(cfg_param);
 

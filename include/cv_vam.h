@@ -55,6 +55,7 @@ enum VAM_EVT{
     VAM_EVT_PEER_UPDATE,
     VAM_EVT_PEER_ALARM,
     VAM_EVT_GPS_STATUS,
+    VAM_EVT_GSNR_EBD_DETECT, 
     VAM_EVT_MAX
 };
 
@@ -221,6 +222,7 @@ int rcp_parse_msg(vam_envar_t *p_vam,
 
 void lip_gps_proc(vam_envar_t *p_vam, uint8_t *databuf, uint32_t len);
 void lip_update_local(t_nmea_rmc *p_rmc, float *p_accu);
+void lip_update_local_acc(float x, float y, float z);
 
 double vsm_get_distance(vam_position_t *p_src, vam_position_t *p_dest);
 double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest);
@@ -236,6 +238,7 @@ int32_t vam_cancel_alert(uint32_t alerttype);
 
 int32_t rcp_send_evam(vam_envar_t *p_vam);
 void vsm_start_evam_broadcast(vam_envar_t *p_vam);
+void vam_gsnr_ebd_detected(uint8_t status);
 
 
 #endif /* __CV_VAM_H__ */

@@ -19,6 +19,8 @@
 #include "cv_cms_def.h"
 
 #include "led.h"
+#include "key.h"
+#include "cv_vsa.h"
 
 #define HUMAN_ITERFACE_DEFAULT         SECOND_TO_TICK(1)
 
@@ -89,7 +91,8 @@ rt_err_t hi_add_event_queue(sys_envar_t *p_sys,
 void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
 	uint32_t type = 0;
-
+	vsa_envar_t *p_vsa = &p_cms_envar->vsa;
+	
     switch(p_msg->id){
         case SYS_MSG_INITED:
             rt_kprintf("%s: initialize complete\n", __FUNCTION__);
@@ -100,7 +103,9 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_GPS_LOST, 0);
 
             break;
-
+		case SYS_MSG_KEY_PRESSED:
+			vsa_add_event_queue(p_vsa, VSA_MSG_KEY_UPDATE, 0,p_msg->argc,NULL);
+			break;
         case SYS_MSG_START_ALERT:
             rt_kprintf("%s:alert start!!!.\n", __FUNCTION__);
             //rt_mq_send(p_sys->queue_sys_hi, p_msg, sizeof(sys_msg_t));
@@ -138,12 +143,28 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				//don't distinguish  message of  alert canceling   for the time being
             	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
             break;
+			
+		case SYS_MSG_ALARM_ACTIVE:
+			
+			 	if (p_msg->argc == VSA_ID_VBD)
+					type = HI_OUT_VBD_STATUS;
+				
+				else if (p_msg->argc == VSA_ID_EBD)
+					type = HI_OUT_EBD_STATUS;
+				
+			    hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,type, 0);				
+				break;
+				
+		case SYS_MSG_ALARM_CANCEL:
+			
+			 	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+				break;		
 
         case SYS_MSG_GPS_UPDATE:
             hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,\
                 ((p_msg->argc == 0)? HI_OUT_GPS_LOST:HI_OUT_GPS_CAPTURED) , 0);
             break;
-
+		
         default:
             break;
     }
@@ -250,6 +271,16 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
                 break;
 
+			case HI_OUT_VBD_STATUS:
+                p_sys->led_blink_duration[LED_RED] = 0xFFFF;
+                p_sys->led_blink_period[LED_RED] = 0xFFFF;
+                p_sys->led_blink_cnt[LED_RED] = 0;
+				
+                p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
+                p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
+                p_sys->led_blink_cnt[LED_GREEN] = 0;
+				break;				
+
 			case HI_OUT_EBD_ALERT:
               //  voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
               	rt_timer_start(p_cms_envar->sys.timer_voc);
@@ -258,7 +289,14 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 p_sys->led_blink_cnt[LED_RED] = 0;
                 p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
                 break;	
-
+				
+			case HI_OUT_EBD_STATUS:
+				p_sys->led_blink_duration[LED_RED] = 0xFFFF;
+                p_sys->led_blink_period[LED_RED] = 0xFFFF;
+                p_sys->led_blink_cnt[LED_RED] = 0;				
+                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+				break;
+				
             case HI_OUT_CANCEL_ALERT:
 				if(p_cms_envar->vsa.alert_pend == 0)
 					rt_timer_stop(p_cms_envar->sys.timer_voc);

@@ -18,14 +18,14 @@
 #include "cv_vam.h"
 #include "cv_cms_def.h"
 #include "cv_vsa.h"
-
+#include "key.h"
 
 
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
 #define VSA_TIMER_PERIOD         SECOND_TO_TICK(1)
-
+#define VSA_EBD_SEND_PERIOD      SECOND_TO_TICK(5)
 
 /*****************************************************************************
  * implementation of functions                                               *
@@ -68,12 +68,19 @@ void vsa_peer_alarm_update(void *parameter)
 }
 /* END:   Added by wanglei, 2014/8/1 */
 
+void vsa_gsnr_ebd_update(void *parameter)
+{
+    vsa_envar_t *p_vsa = &p_cms_envar->vsa;
+    vsa_add_event_queue(p_vsa, VSA_GSNR_EBD_DETECT, 0,0,NULL);
+}
+
 void vsa_start(void)
 {
     vam_set_event_handler(VAM_EVT_LOCAL_UPDATE, vsa_local_status_update);
     vam_set_event_handler(VAM_EVT_PEER_UPDATE, vsa_peer_status_update);
     vam_set_event_handler(VAM_EVT_PEER_ALARM, vsa_peer_alarm_update);
     vam_set_event_handler(VAM_EVT_GPS_STATUS, vsa_gps_status_update);
+    vam_set_event_handler(VAM_EVT_GSNR_EBD_DETECT, vsa_gsnr_ebd_update);
 }
 
 /*****************************************************************************
@@ -247,7 +254,13 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
     return err;
 }
 
-
+void timer_ebd_send_callback(void* parameter)
+{
+	vam_cancel_alert(1);
+	rt_kprintf("Cancel Emergency braking \n\n");
+	sys_add_event_queue(&p_cms_envar->sys,SYS_MSG_ALARM_CANCEL, 0, VSA_ID_EBD, NULL);
+                                            
+}
 static int ebd_judge(vsa_envar_t *p_vsa)
 {
 //#if 0
@@ -277,10 +290,16 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
     sys_msg_t *p_msg = (sys_msg_t *)arg;
 	vam_get_peer_alert_status(&peer_alert);
 	switch(p_msg->id){
-		case VSA_MSG_LOCAL_UPDATE:
-			//if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold)&&()
-			//	vam_active_alert(1);
-			//rt_kprintf("update information in ebd \n\n");
+		case VSA_GSNR_EBD_DETECT:
+			if ((p_vsa->local.speed >= p_vsa->working_param.danger_detect_speed_threshold))
+			{
+				vam_active_alert(1);
+				rt_timer_stop(p_vsa->timer_ebd_send);
+				rt_timer_start(p_vsa->timer_ebd_send);
+				rt_kprintf("Detect Emergency braking \n\n");
+				sys_add_event_queue(&p_cms_envar->sys, \
+                                            SYS_MSG_ALARM_ACTIVE, 0, VSA_ID_EBD, NULL);
+				}
 			break;
 		case VSA_MSG_ALARM_UPDATE:
 			if((peer_alert&VAM_ALERT_MASK_EBD)&&(ebd_judge(p_vsa)>0))
@@ -340,9 +359,31 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 {
 	int err = 1;  /* '1' represent is not handled. */ 
 	uint16_t peer_alert;
+	static uint8_t keycnt = 0xff;
 	sys_msg_t *p_msg = (sys_msg_t *)arg;
 	vam_get_peer_alert_status(&peer_alert);
 	switch(p_msg->id){
+		  case VSA_MSG_KEY_UPDATE:
+				if(p_msg->argc == C_UP_KEY)
+					{
+						if(keycnt)
+							{
+								vam_active_alert(0);
+								sys_add_event_queue(&p_cms_envar->sys, \
+											  SYS_MSG_ALARM_ACTIVE, 0, VSA_ID_VBD, NULL);
+								rt_kprintf("Active Vihicle Break Down Alert\n");
+							}	
+						else 
+							{	
+								vam_cancel_alert(0);
+								sys_add_event_queue(&p_cms_envar->sys, \
+											  SYS_MSG_ALARM_CANCEL, 0, VSA_ID_VBD, NULL);
+								rt_kprintf("Cancel Vihicle Break Down Alert\n");
+							}
+						keycnt = ~keycnt;
+					}
+			   break;
+		
 		  case VSA_MSG_ALARM_UPDATE:
 			  if((peer_alert&VAM_ALERT_MASK_VBD)&&(vbd_judge(p_vsa)>0))
 				  {
@@ -473,6 +514,10 @@ void vsa_init()
                            RT_VSA_THREAD_STACK_SIZE, RT_VSA_THREAD_PRIORITY, 20);
     RT_ASSERT(p_vsa->task_vsa != RT_NULL)
     rt_thread_startup(p_vsa->task_vsa);
+
+    p_vsa->timer_ebd_send = rt_timer_create("tm-ebd",timer_ebd_send_callback,NULL,\
+        VSA_EBD_SEND_PERIOD,RT_TIMER_FLAG_ONE_SHOT); 					
+    RT_ASSERT(p_vsa->timer_ebd_send != RT_NULL);
 
 	rt_kprintf("vsa module initial\n");
 }

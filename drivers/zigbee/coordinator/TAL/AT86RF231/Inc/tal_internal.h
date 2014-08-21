@@ -206,7 +206,7 @@ extern bool tal_beacon_transmission;
 #if ((defined BEACON_SUPPORT) || (defined ENABLE_TSTAMP)) && ((ANTENNA_DIVERSITY == 1) || (DISABLE_TSTAMP_IRQ == 1))
 #define TRX_IRQ_DEFAULT     TRX_IRQ_TRX_END | TRX_IRQ_RX_START
 #else
-#define TRX_IRQ_DEFAULT     TRX_IRQ_TRX_END | TRX_IRQ_RX_START
+#define TRX_IRQ_DEFAULT     TRX_IRQ_TRX_END 
 #endif
 
 /* === PROTOTYPES ========================================================== */

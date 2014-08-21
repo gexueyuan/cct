@@ -71,7 +71,7 @@ typedef struct _vsa_envar{
     rt_thread_t task_vsa;
     rt_mq_t queue_vsa;
 
-    rt_timer_t timer_xxx;
+    rt_timer_t timer_ebd_send;
                  
 }vsa_envar_t;
 

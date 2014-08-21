@@ -19,6 +19,12 @@ uint8_t IsLocate = __FALSE;
 //GPS采集周期
 uint32_t gpsCycTime = CYC_GPS_DEFALUT;
 
+driving_action_st G_Action ;
+float vehicle_long_accel_value = 0.0;	//longitudinal acceleration
+#define Grav_accel_value (9.80665f)	//Gravitational acceleration
+#define DRIVING_RUSH_ADD_THRESHOLD		(5.5f)
+#define DRIVING_RUSH_STOP_THRESHOLD	(-5.5f)
+
 void nmea_add(t_nmea_rmc *param);
 int32_t nmea_rmc_time(char *pStrS, char *pStrE, t_time *tt);
 int32_t nmea_rmc_date(char *pStrS, char *pStrE, t_time *tt);
@@ -31,10 +37,18 @@ void nmea_init(void) {
 }
 
 void nmea_add(t_nmea_rmc *param) {
-//    uint32_t diffT = 0;
+	static float speed_diff = 0.0 , old_speed = 0.0;
+	static float angle_diff = 0.0 , old_heading = 0.0;
 
+	static int time_diff = 0;	
+	static t_time tt_old;
+
+	//驾驶习惯发生点的信息
+//static driving_rush_value_st G_tmp;
+    
 	rt_mutex_take(&mutex_gps,RT_WAITING_FOREVER);
-
+#if 0
+	int32_t diffT = 0;
     memcpy(&(nmeaCfg.gpsLastBuff), param, sizeof(t_nmea_rmc));
 
 //    diffT = param->updateTime.sec - nmeaCfg.diffsec;
@@ -44,7 +58,102 @@ void nmea_add(t_nmea_rmc *param) {
         memcpy((nmeaCfg.gpsBuff + nmeaCfg.crtIndex), param, sizeof(t_nmea_rmc));
         nmeaCfg.diffsec = param->updateTime.sec;
 //    }
+#endif
+	//加速度计算
+	NMEA_DEBUG("NMEA->上次时间:%d\n",tt_old.sec);
+	NMEA_DEBUG("NMEA->本次时间:%d\n",param->tt.sec);
+	NMEA_DEBUG("NMEA->上次速度:%f\n",old_speed);
+	NMEA_DEBUG("NMEA->本次速度:%f\n",param->speed);
+	
+	speed_diff = param->speed - old_speed;					//速度差	km/h
+	time_diff = param->tt.sec - tt_old.sec;			        //时间差
+	time_diff = (time_diff < 0) ? (time_diff+60) : time_diff;
+    angle_diff = param->heading - old_heading;              //角度差
+    G_Action.diff_angle = abs(angle_diff);
+    G_Action.speed = param->speed;
 
+    if(param->speed==0 && speed_diff == 0)
+	{
+        /* 车停 */
+        G_Action.carRun = 0;
+	}
+	if(speed_diff != 0 && time_diff < 1)
+	{
+        G_Action.carRun = 1;
+		vehicle_long_accel_value = speed_diff * 3.6f /time_diff;		//速度单位m/s 时间单位s
+		G_Action.vehicle_accel_value = vehicle_long_accel_value ;
+#if 0
+        uint8_t strbuf[100] = {0};
+        sprintf(strbuf, "NMEA->时间间隔%d, 加速度值%f, diff_angle", time_diff, vehicle_long_accel_value, G_Action.diff_angle);
+        NMEA_DEBUG("%s\r\n", strbuf);
+		if(G_tmp.type == None)
+		{
+			if(vehicle_long_accel_value > DRIVING_RUSH_ADD_THRESHOLD)
+			{				
+				G_tmp.type		= Rush_Add;				
+				G_tmp.value		= vehicle_long_accel_value;
+				G_tmp.latitude	= param->latitude;
+				G_tmp.longitude	= param->longitude;
+				G_tmp.speed		= param->speed;
+				memcpy(&G_tmp.time , &param->tt , sizeof(t_time));
+				
+				NMEA_DEBUG("NMEA->车辆开始急加速\n类型:%d 值:%f\n时间:%04d-%02d-%02d %02d:%02d:%02d\nGPS:%f,%f,%f\n",
+					G_tmp.type,			G_tmp.value,
+					G_tmp.time.year,	G_tmp.time.mon,		G_tmp.time.day,	
+					G_tmp.time.hour,	G_tmp.time.min,	G_tmp.time.sec,				
+					G_tmp.latitude,		G_tmp.longitude,	G_tmp.speed);
+			}
+			else if(vehicle_long_accel_value < DRIVING_RUSH_STOP_THRESHOLD)
+			{
+				G_tmp.type		= Rush_Stop;
+				G_tmp.value		= vehicle_long_accel_value;
+				G_tmp.latitude	= param->latitude;
+				G_tmp.longitude	= param->longitude;
+				G_tmp.speed		= param->speed;
+				
+				memcpy(&G_tmp.time , &param->tt , sizeof(t_time));
+				
+				NMEA_DEBUG("NMEA->车辆开始急减速\n类型:%d 值:%f\n时间:%04d-%02d-%02d %02d:%02d:%02d\nGPS:%f,%f,%f\n",
+					G_tmp.type,			G_tmp.value,
+					G_tmp.time.year,	G_tmp.time.mon,		G_tmp.time.day,	
+					G_tmp.time.hour,	G_tmp.time.min,	G_tmp.time.sec,				
+					G_tmp.latitude,		G_tmp.longitude,	G_tmp.speed);
+			}
+		}
+		else if(G_tmp.type == Rush_Add)
+		{
+			if(vehicle_long_accel_value > DRIVING_RUSH_ADD_THRESHOLD)	//持续ADD
+			{
+				NMEA_DEBUG("NMEA->车辆持续急加速中\n");
+			}
+			else
+			{
+                G_tmp.type = None;
+				NMEA_DEBUG("NMEA->车辆停止急加速\n");
+			}
+		}
+		else if(G_tmp.type == Rush_Stop)
+		{
+			if(vehicle_long_accel_value < DRIVING_RUSH_STOP_THRESHOLD)	//持续STOP
+			{
+				NMEA_DEBUG("NMEA->车辆持续急减速中\n");
+			}
+			else
+			{				
+                G_tmp.type = None;
+				NMEA_DEBUG("NMEA->车辆停止急减速\n");
+			}		
+		}
+#endif      
+	}
+    else
+	{
+		NMEA_DEBUG("NMEA->时间间隔[%d]s 不符合要求\n",time_diff);
+	}
+
+	old_speed = param->speed;
+	tt_old.sec = param->updateTime.sec ;
+    old_heading = param->heading;
 	rt_mutex_release(&mutex_gps);
 }
 
@@ -300,7 +409,6 @@ void nmea_parse(uint8_t *buff, uint32_t len)
             //add end
 
             if ( (pStrS = strchr(pStrS + 1, ',')) != NULL &&\
-                 (pStrS = strchr(pStrS + 1, ',')) != NULL &&\
                  (pStrE = strchr(pStrS + 1, ',')) != NULL &&\
                  nmea_rmc_date(pStrS + 1, pStrE, &tt) == 0)
             {
@@ -316,7 +424,7 @@ void nmea_parse(uint8_t *buff, uint32_t len)
                 //rt_kprintf(buf);
 
                 lip_update_local(&nmeaRmc, NULL);
-
+                nmea_add(&nmeaRmc);
                 //UTC 时间
 //                if (time_check() == __FALSE) {
 //                    time_set(tt);

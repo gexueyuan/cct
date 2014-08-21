@@ -27,6 +27,9 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "lsm303dlhc.h"
+#include "gsensor.h"
+
+#ifdef GSENSOR_LSM303DLHC
 
 /** @addtogroup Utilities
   * @{
@@ -846,6 +849,24 @@ static void LSM303DLHC_LowLevel_Init(void)
   
   GPIO_InitStructure.GPIO_Pin = LSM303DLHC_I2C_INT2_PIN;
   GPIO_Init(LSM303DLHC_I2C_INT2_GPIO_PORT, &GPIO_InitStructure);
+  
+
+  /* BEGIN: Added by wanglei, 2014/8/7 */
+  /* Connect EXTI Line to int1 int2 Pin */
+  SYSCFG_EXTILineConfig(LSM303DLHC_I2C_INT1_EXTI_PORT_SOURCE, LSM303DLHC_I2C_INT1_EXTI_PIN_SOURCE);
+
+  SYSCFG_EXTILineConfig(LSM303DLHC_I2C_INT2_EXTI_PORT_SOURCE, LSM303DLHC_I2C_INT2_EXTI_PIN_SOURCE);
+
+  EXTI_InitStructure.EXTI_Line = LSM303DLHC_I2C_INT1_EXTI_LINE;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  
+  EXTI_Init(&EXTI_InitStructure);
+
+  EXTI_InitStructure.EXTI_Line = LSM303DLHC_I2C_INT2_EXTI_LINE;
+  EXTI_Init(&EXTI_InitStructure);
+  /* END:   Added by wanglei, 2014/8/7 */
 }  
 
 #ifdef USE_DEFAULT_TIMEOUT_CALLBACK
@@ -863,21 +884,6 @@ uint32_t LSM303DLHC_TIMEOUT_UserCallback(void)
 }
 #endif /* USE_DEFAULT_TIMEOUT_CALLBACK */
 
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
-  
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
-  
+#endif /* GSENSOR_LSM303DLHC */  
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/     

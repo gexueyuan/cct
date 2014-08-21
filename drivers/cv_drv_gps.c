@@ -74,18 +74,6 @@ static void ubx_cfg_msg_std_nmea(ubx_cfg_msg_nmea_id_t nmea_id, uint8_t enable)
 }
 
 
-/* UBX-CFG MSG. disable all msg */
-#if 0 //reserved
-static void gps_disable_msg(void)
-{
-    ubx_cfg_msg_nmea_id_t i = STD_NMEA_ID_GGA;
-    for(i=STD_NMEA_ID_GGA; i<STD_NMEA_ID_END; i++)
-    {
-        ubx_cfg_msg_std_nmea(i, 0);
-    }
-}
-#endif
-
 /* UBX-CFG MSG. disable GPGGA/GPGLL/GPGSV/GPVTG msg */
 static void gps_cfg_msg(void)
 {
@@ -128,6 +116,48 @@ static void gps_set_host_baudrate(int baud)
     rt_device_control(dev, RT_DEVICE_CTRL_CONFIG, (void *)&config);
 }
 
+
+void gps_cfg_rate(uint8_t freq)
+{
+    uint8_t cfg_pkt[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xF4, 0x01, 
+                         0x01, 0x00, 0x01, 0x00, 0x0B, 0x77};
+
+    switch (freq)
+    {
+        case 1:
+        {
+            cfg_pkt[6] = 0xE8;
+            cfg_pkt[7] = 0x03;
+            cfg_pkt[12] = 0x01;
+            cfg_pkt[13] = 0x39;
+            break;
+        }
+        case 2:
+        {
+            cfg_pkt[6] = 0xF4;
+            cfg_pkt[7] = 0x01;
+            cfg_pkt[12] = 0x0B;
+            cfg_pkt[13] = 0x77;
+            break;
+        }
+        case 5:  //5Hz
+        {
+            cfg_pkt[6] = 0xC8;
+            cfg_pkt[7] = 0x00;
+            cfg_pkt[12] = 0xDE;
+            cfg_pkt[13] = 0x6A;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+	rt_device_t dev; 
+    dev = rt_device_find(RT_GPS_DEVICE_NAME);
+    rt_device_write(dev, 0, cfg_pkt, sizeof(cfg_pkt));
+    
+}
 static void gps_read_data(rt_device_t dev)
 {
 	uint8_t tmp = 0 ;
@@ -146,6 +176,7 @@ static void gps_read_data(rt_device_t dev)
 				__GPSBuff.PpBuf[__GPSBuff.Pipe].Len %= GPS_BUFF_SIZE;
 				__GPSBuff.PpBuf[__GPSBuff.Pipe].Flag = 0;
 
+#if 1
                 if((0 == cfg_flag) && (0 == memcmp(__GPSBuff.PpBuf[__GPSBuff.Pipe].Buf, "$GPTXT", 6)))
                 {
                     /* got ublox GPTXT msg. config gps baud to 115200 */
@@ -156,6 +187,7 @@ static void gps_read_data(rt_device_t dev)
                     gps_set_host_baudrate(BAUD_RATE_115200);
                     cfg_flag = 1;
                 }
+#endif                    
                 {
                     sys_msg_t msg;
                     msg.id = VAM_MSG_GPSDATA;
@@ -174,6 +206,7 @@ static void gps_read_data(rt_device_t dev)
 					__GPSBuff.PpBuf[__GPSBuff.Pipe].Len++;
 					__GPSBuff.PpBuf[__GPSBuff.Pipe].Len %= GPS_BUFF_SIZE;
 				}
+#if 1
                 else
                 {
                     /* receive messy code because of baudrate(9600) is not correct, 
@@ -185,6 +218,7 @@ static void gps_read_data(rt_device_t dev)
                     }
                     
                 }
+#endif
 			}
 		}
 		else{
@@ -198,8 +232,19 @@ void rt_gps_thread_entry (void *parameter)
 	rt_device_t dev ;
     
 	dev = rt_device_find(RT_GPS_DEVICE_NAME);
-	rt_device_open(dev, RT_DEVICE_OFLAG_RDWR) ;
+	rt_device_open(dev, RT_DEVICE_OFLAG_RDWR);
 
+#if 0
+    rt_thread_delay(SECOND_TO_TICK(1));
+    /* config ublox nmea type . config gps baud to 115200 */
+    gps_cfg_msg();
+    rt_thread_delay(1);
+    gps_cfg_prt();
+    rt_thread_delay(1);
+    gps_set_host_baudrate(BAUD_RATE_115200);     
+    rt_thread_delay(1);
+    gps_cfg_rate(5);
+#endif
 	while(1){
 		gps_read_data(dev);
 		rt_thread_delay(1);
