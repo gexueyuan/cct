@@ -44,9 +44,9 @@ int32_t s_cnt = 0;
 int32_t rd_cnt = 30 ;
 uint8_t ahead_flag = 0 ;
 
-float	SHARP_RIGHT_THRESOLD    =	5.5;
+float	SHARP_RIGHT_THRESOLD    =	8;//5.5;
 uint8_t	SHARP_RIGHT_CNT			= 	6;
-float	SHARP_LEFT_THRESOLD		=	-5.5;
+float	SHARP_LEFT_THRESOLD		=	-8;//-5.5;
 uint8_t	SHARP_LEFT_CNT			= 	6;
 float	SHARP_SLOWDOWN_THRESOLD	=   -5.5; //obd use: -5.5
 uint8_t	SHARP_SLOWDOWN_CNT		=	3;
@@ -519,6 +519,7 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 {
 	static int32_t cnt = 0 ;
+	sys_envar_t *p_sys = &p_cms_envar->sys;
 	
 	if(acce_k > SHARP_RIGHT_THRESOLD)	
 	{
@@ -526,6 +527,7 @@ void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 		cnt++;
 		if(cnt >= SHARP_RIGHT_CNT)		  //右转
 		{
+			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
 			GSNR_LOG(GSNR_WARNING, "发生急右转\r\n\n");
 			cnt = 0 ;
 		}
@@ -535,7 +537,8 @@ void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 		printAcc(GSNR_NOTICE, "左转xyz",acce_ahead, acce_k, acce_k_x);
 		cnt++;
 		if(cnt >= SHARP_LEFT_CNT)		  //左转
-		{
+		{	
+			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
 			GSNR_LOG(GSNR_WARNING, "发生急左转\r\n\n");
 			cnt = 0 ;
 		}

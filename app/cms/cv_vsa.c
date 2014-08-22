@@ -132,6 +132,49 @@ static int crd_judge(vsa_envar_t *p_vsa)
     return 1;
 }
 
+static int rear_end_judge(vsa_envar_t *p_vsa)
+{
+
+    int32_t dis_actual, dis_alert;
+
+    /* put the beginning only in order to output debug infomations */
+    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
+    dis_alert = (int32_t)((p_vsa->local.speed*2.0f - p_vsa->remote.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
+    /* end */
+
+    if (p_vsa->remote.speed <= p_vsa->working_param.danger_detect_speed_threshold){
+		
+        return 0;
+    }
+
+    if (p_vsa->local.speed >= p_vsa->remote.speed){
+		
+        return 0;
+    }
+
+    if (vam_get_peer_relative_dir(p_vsa->remote.pid) < 0){
+		
+        return 0;
+    }
+
+    /* remote is behind of local */
+    if (dis_actual <= 0){
+		
+        return 0;
+    }
+
+    if (dis_actual > dis_alert){
+        return 0;
+    }
+	
+	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
+
+	rt_kprintf("Rear end danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
+
+    return 1;
+
+}
+
 static int crd_local_judge(vsa_envar_t *p_vsa)
 {
 	float relative_speed = 0;

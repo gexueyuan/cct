@@ -114,7 +114,7 @@ void  write_def_param(void)
 	if(-1 == err)
 		rt_kprintf("error happened when writing default param to flash");
 	else
-		rt_kprintf("write default param to flash  success");
+		rt_kprintf("write default param to flash  success\n");
 
 
 }
@@ -159,7 +159,7 @@ void param_get(void)
     rt_kprintf("vam.evam_broadcast_type(vam.ebt)=%d\n", p_cms_param->vam.evam_broadcast_type);
     rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d (ms)\n\n", p_cms_param->vam.evam_broadcast_peroid);
 
-    rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (m/s)\n", p_cms_param->vsa.danger_detect_speed_threshold);
+    rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (km/h)\n", p_cms_param->vsa.danger_detect_speed_threshold);
     rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);
 	rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", p_cms_param->vsa.crd_saftyfactor);
     rt_kprintf("vsa.ebd_mode(vsa.em)=%d\n", p_cms_param->vsa.ebd_mode);
