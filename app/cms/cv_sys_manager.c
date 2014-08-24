@@ -132,7 +132,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				//uint32_t type = 0;
 			
 				if (p_msg->argc == VSA_ID_CRD){
-					type = HI_OUT_CANCEL_ALERT;
+					type = HI_OUT_CRD_ALERT;
 				}
 				else if (p_msg->argc == VSA_ID_VBD){
 					type = HI_OUT_VBD_CANCEL;
@@ -141,7 +141,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 					type = HI_OUT_EBD_CANCEL;
 				}
 				//don't distinguish  message of  alert canceling   for the time being
-            	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+            	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,type, 0);
             break;
 			
 		case SYS_MSG_ALARM_ACTIVE:
@@ -156,8 +156,12 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				break;
 				
 		case SYS_MSG_ALARM_CANCEL:
-			
-			 	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+				if (p_msg->argc == VSA_ID_VBD)
+					type = HI_OUT_VBD_STOP;
+				
+				else if (p_msg->argc == VSA_ID_EBD)
+					type = HI_OUT_EBD_STOP;
+			 	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,type, 0);
 				break;		
 
         case SYS_MSG_GPS_UPDATE:
@@ -255,46 +259,37 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             case HI_OUT_CRD_ALERT:
                // voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
+              //  p_sys->led_blink_duration[LED_RED] = 0xFFFF;
+             //   p_sys->led_blink_period[LED_RED] = 15;
+             //   p_sys->led_blink_cnt[LED_RED] = 0;
 
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+             //   p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+             	p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
 
                 break;
             case HI_OUT_VBD_ALERT:
                // voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 10;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+               // p_sys->led_blink_duration[LED_RED] = 10;
+               // p_sys->led_blink_period[LED_RED] = 15;
+               // p_sys->led_blink_cnt[LED_RED] = 0;
+               // p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+			   p_sys->led_priority |= 1<<HI_OUT_VBD_ALERT;
                 break;
 
 			case HI_OUT_VBD_STATUS:
-                p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_RED] = 0;
-				
-                p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_GREEN] = 0;
+				p_sys->led_priority |= 1<<HI_OUT_VBD_STATUS;
 				break;				
 
 			case HI_OUT_EBD_ALERT:
               //  voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
               	rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 10;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+               
+			   p_sys->led_priority |= 1<<HI_OUT_EBD_ALERT;
                 break;	
 				
 			case HI_OUT_EBD_STATUS:
-				p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_RED] = 0;				
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+				p_sys->led_priority |= 1<<HI_OUT_EBD_STATUS;
 				break;
 				
             case HI_OUT_CANCEL_ALERT:

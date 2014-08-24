@@ -89,12 +89,16 @@ enum HI_OUT_TYPE{
     HI_OUT_GPS_LOST,
     HI_OUT_CRD_ALERT,
     HI_OUT_CRD_CANCEL,
+    HI_OUT_CRD_REAR_ALERT,
+    HI_OUT_CRD_REAR_CANCEL,
     HI_OUT_VBD_ALERT,
     HI_OUT_VBD_CANCEL,
     HI_OUT_VBD_STATUS,
+    HI_OUT_VBD_STOP,
     HI_OUT_EBD_ALERT,
     HI_OUT_EBD_CANCEL,
     HI_OUT_EBD_STATUS,
+    HI_OUT_EBD_STOP,
     HI_OUT_CANCEL_ALERT,
 };
 
@@ -152,6 +156,7 @@ typedef struct _sys_envar{
 
     uint32_t hi_timer_cnt;
 
+    uint32_t led_priority;
     uint16_t led_blink_duration[3];
     uint16_t led_blink_period[3];
     uint16_t led_blink_cnt[3];
