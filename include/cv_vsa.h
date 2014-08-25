@@ -64,9 +64,10 @@ typedef struct _vsa_envar{
     vam_stastatus_t remote;
 
 	/*List head*/	
-    list_head_t crd_list;	
-    list_head_t ebd_list;
-    list_head_t vbd_list;
+    list_head_t crd_list;
+    list_head_t crd_rear_list;
+    //list_head_t ebd_list;
+    //list_head_t vbd_list;
 
     /* os related */
     rt_thread_t task_vsa;
@@ -87,6 +88,18 @@ typedef struct _vsa_crd_node{
     
 
 }vsa_crd_node_t;
+
+typedef struct _vsa_crd_rear_node{
+    /* !!!DON'T modify it!!! */
+    list_head_t list;
+
+    uint8_t pid[RCP_TEMP_ID_LEN];  //temporary ID
+
+    /* private */
+    uint16_t life;
+    
+
+}vsa_crd_rear_node_t;
 
 
 typedef int (*vsa_app_handler)(vsa_envar_t *p_vsa, void *p_msg);

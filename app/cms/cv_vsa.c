@@ -213,7 +213,8 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
     sys_msg_t *p_msg = (sys_msg_t *)arg;	
     vam_envar_t *p_vam = &p_cms_envar->vam;
 	vsa_crd_node_t *p_crd = NULL,*pos = NULL;
-	rt_bool_t  crd_flag;
+	vsa_crd_rear_node_t *p_rear = NULL,*pos_rear = NULL;
+	rt_bool_t  crd_flag,crd_rear_flag;
     
     switch(p_msg->id){
         case VSA_MSG_LOCAL_UPDATE:
@@ -286,6 +287,72 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
                         p_vsa->alert_pend &= ~(1<<VSA_ID_CRD);
                         sys_add_event_queue(&p_cms_envar->sys, \
                                             SYS_MSG_STOP_ALERT, 0, VSA_ID_CRD, NULL);
+                    }
+                }
+            }
+
+
+            if (p_vsa->alert_mask & (1<<VSA_ID_CRD_REAR)){
+                if (rear_end_judge(p_vsa) > 0){
+					
+					rt_sem_take(p_vam->sem_sta, RT_WAITING_FOREVER);
+
+					if(list_empty(&p_vsa->crd_rear_list))
+						{
+							p_rear = (vsa_crd_rear_node_t*)rt_malloc(sizeof(vsa_crd_rear_node_t));
+							memcpy(p_rear->pid,p_vsa->remote.pid,RCP_TEMP_ID_LEN);			
+							list_add(&p_rear->list,&p_vsa->crd_rear_list);
+						}
+					else
+					  list_for_each_entry(pos_rear,vsa_crd_rear_node_t,&p_vsa->crd_rear_list,list)
+							{
+								if(memcmp(p_vsa->remote.pid,pos_rear->pid,RCP_TEMP_ID_LEN) == 0)
+									{
+										crd_rear_flag = RT_FALSE;
+										break;
+									}	
+								else
+									crd_rear_flag = RT_TRUE;
+							}
+					if(crd_rear_flag )
+						{
+							p_rear= (vsa_crd_rear_node_t*)rt_malloc(sizeof(vsa_crd_rear_node_t));
+							memcpy(p_rear->pid,p_vsa->remote.pid,RCP_TEMP_ID_LEN);			
+							list_add(&p_rear->list,&p_vsa->crd_rear_list);
+						}	
+					rt_sem_release(p_vam->sem_sta);					
+                /* danger is detected */    
+                    if (p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR)){
+                    /* do nothing */    
+                    }
+                    else{
+                    /* inform system to start alert */
+                        p_vsa->alert_pend |= (1<<VSA_ID_CRD_REAR);
+                        sys_add_event_queue(&p_cms_envar->sys, \
+                                            SYS_MSG_START_ALERT, 0, VSA_ID_CRD_REAR, NULL);
+                    }
+                }
+                else{
+					
+					rt_sem_take(p_vam->sem_sta, RT_WAITING_FOREVER);
+					
+					  list_for_each_entry(pos_rear,vsa_crd_rear_node_t,&p_vsa->crd_rear_list,list)					
+							{
+								if(memcmp(p_vsa->remote.pid,pos_rear->pid,RCP_TEMP_ID_LEN) == 0)
+									{
+								   		list_del(&pos_rear->list);
+										rt_free((vsa_crd_rear_node_t*)list_entry(&pos_rear->list,vsa_crd_rear_node_t,list));
+									}	
+									
+					  		}	
+					  
+					 rt_sem_release(p_vam->sem_sta);				  
+						
+                    if ((p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))&&(list_empty(&p_vsa->crd_rear_list))){
+                    /* inform system to stop alert */
+                        p_vsa->alert_pend &= ~(1<<VSA_ID_CRD_REAR);
+                        sys_add_event_queue(&p_cms_envar->sys, \
+                                            SYS_MSG_STOP_ALERT, 0, VSA_ID_CRD_REAR, NULL);
                     }
                 }
             }
@@ -547,10 +614,10 @@ void vsa_init()
 
 	
 	INIT_LIST_HEAD(&p_vsa->crd_list);	
-	INIT_LIST_HEAD(&p_vsa->ebd_list);
-	INIT_LIST_HEAD(&p_vsa->vbd_list);
+	INIT_LIST_HEAD(&p_vsa->crd_rear_list);
+	//INIT_LIST_HEAD(&p_vsa->vbd_list);
 
-    p_vsa->alert_mask = (1<<VSA_ID_CRD)|(1<<VSA_ID_VBD)|(1<<VSA_ID_EBD);
+    p_vsa->alert_mask = (1<<VSA_ID_CRD)|(1<<VSA_ID_CRD_REAR)|(1<<VSA_ID_VBD)|(1<<VSA_ID_EBD);
 
     /* os object for vsa */
     p_vsa->queue_vsa = rt_mq_create("q-vsa", sizeof(sys_msg_t), VSA_QUEUE_SIZE, RT_IPC_FLAG_FIFO);

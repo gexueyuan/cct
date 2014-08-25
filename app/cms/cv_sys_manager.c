@@ -117,6 +117,9 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 if (p_msg->argc == VSA_ID_CRD){
                     type = HI_OUT_CRD_ALERT;
                 }
+                else if (p_msg->argc == VSA_ID_CRD_REAR){
+                    type = HI_OUT_CRD_REAR_ALERT;
+                }
                 else if (p_msg->argc == VSA_ID_VBD){
                     type = HI_OUT_VBD_ALERT;
                 }
@@ -136,6 +139,9 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 			
 				if (p_msg->argc == VSA_ID_CRD){
 					type = HI_OUT_CRD_CANCEL;
+				}
+				if (p_msg->argc == VSA_ID_CRD_REAR){
+					type = HI_OUT_CRD_REAR_CANCEL;
 				}
 				else if (p_msg->argc == VSA_ID_VBD){
 					type = HI_OUT_VBD_CANCEL;
@@ -418,7 +424,6 @@ void rt_hi_thread_entry(void *parameter)
     rt_err_t err;
     sys_msg_t msg, *p_msg = &msg;
     sys_envar_t *p_sys = (sys_envar_t *)parameter;
-    int i;
 	static uint8_t ledss = 0xff;
 	int16_t breath_led = 0;
 	uint8_t led_light_dark = 1;
@@ -442,17 +447,18 @@ void rt_hi_thread_entry(void *parameter)
 				if(led_light_dark )
 					{
                 		led_on(p_sys->led_color);
-						Delay(breath_led++);
+						Delay(breath_led);
 						led_off(p_sys->led_color);
 						Delay(BREATH_CYCLE - breath_led);
+						breath_led++;
 						if(breath_led >= BREATH_CYCLE) led_light_dark = 0;
 					}
 				else{
 						led_on(p_sys->led_color);
-						Delay(breath_led--);
+						Delay(breath_led);
 						led_off(p_sys->led_color);
 						Delay(BREATH_CYCLE - breath_led);
-						
+						breath_led--;
 						if(breath_led <= 0) led_light_dark = 1;
 					}
             }
