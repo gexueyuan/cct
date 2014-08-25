@@ -17,6 +17,7 @@
 *****************************************************************************/
 enum VSA_APP_ID{
     VSA_ID_CRD = 0,
+    VSA_ID_CRD_REAR,
     VSA_ID_VBD,    
     VSA_ID_EBD,
     VSM_ID_END

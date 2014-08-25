@@ -179,7 +179,11 @@ static int crd_local_judge(vsa_envar_t *p_vsa)
 {
 	float relative_speed = 0;
 	static  int8_t  send_flag = 1;
-
+	vam_envar_t *p_vam = &p_cms_envar->vam;
+	
+	if(list_empty(&p_vam->neighbour_list))
+		return 0;
+		
 	relative_speed = p_vsa->local.speed - p_vsa->remote.speed;
 
     if (p_vsa->remote.speed >= p_vsa->working_param.danger_detect_speed_threshold)		

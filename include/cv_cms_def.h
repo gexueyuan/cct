@@ -89,12 +89,16 @@ enum HI_OUT_TYPE{
     HI_OUT_GPS_LOST,
     HI_OUT_CRD_ALERT,
     HI_OUT_CRD_CANCEL,
+    HI_OUT_CRD_REAR_ALERT,
+    HI_OUT_CRD_REAR_CANCEL,
     HI_OUT_VBD_ALERT,
     HI_OUT_VBD_CANCEL,
     HI_OUT_VBD_STATUS,
+    HI_OUT_VBD_STOP,
     HI_OUT_EBD_ALERT,
     HI_OUT_EBD_CANCEL,
     HI_OUT_EBD_STATUS,
+    HI_OUT_EBD_STOP,
     HI_OUT_CANCEL_ALERT,
 };
 
@@ -141,6 +145,12 @@ typedef struct _cfg_param{
 }cfg_param_t;
 
 
+typedef struct _led_color{
+
+uint8_t r;
+uint8_t g;
+uint8_t b;
+}led_color_t;
 /** 
     structure of system manager module's environment variable 
 */
@@ -152,9 +162,11 @@ typedef struct _sys_envar{
 
     uint32_t hi_timer_cnt;
 
-    uint16_t led_blink_duration[3];
-    uint16_t led_blink_period[3];
-    uint16_t led_blink_cnt[3];
+    uint32_t led_priority;
+    led_color_t led_color;
+    uint16_t led_blink_duration;
+    uint16_t led_blink_period;
+    uint16_t led_blink_cnt;
 
     /* os related */
     rt_thread_t task_sys_mng;

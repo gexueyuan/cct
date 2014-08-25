@@ -27,6 +27,8 @@
 #define HUMAN_ITERFACE_VOC         	   SECOND_TO_TICK(3)
 
 #define HUMAN_ITERFACE_GPS_VOC         SECOND_TO_TICK(5)
+
+#define BREATH_CYCLE                   36 
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
@@ -35,10 +37,11 @@ extern const unsigned char voice_16k_8bits[];
 extern const unsigned int notice_16k_8bitsLen;
 extern const unsigned int voice_16k_8bitsLen;
 extern void voc_play(uint32_t sample_rate, uint8_t *p_data, uint32_t length);
-extern void led_on(uint32_t led);
-extern void led_off(uint32_t led);
-extern void led_blink(uint32_t led);
+extern void led_on(led_color_t led);
+extern void led_off(led_color_t led);
+extern void led_blink(led_color_t led);
 
+extern void Delay(volatile uint32_t nCount);
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
@@ -132,7 +135,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				//uint32_t type = 0;
 			
 				if (p_msg->argc == VSA_ID_CRD){
-					type = HI_OUT_CANCEL_ALERT;
+					type = HI_OUT_CRD_CANCEL;
 				}
 				else if (p_msg->argc == VSA_ID_VBD){
 					type = HI_OUT_VBD_CANCEL;
@@ -141,7 +144,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 					type = HI_OUT_EBD_CANCEL;
 				}
 				//don't distinguish  message of  alert canceling   for the time being
-            	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+            	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,type, 0);
             break;
 			
 		case SYS_MSG_ALARM_ACTIVE:
@@ -156,8 +159,12 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				break;
 				
 		case SYS_MSG_ALARM_CANCEL:
-			
-			 	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_CANCEL_ALERT, 0);
+				if (p_msg->argc == VSA_ID_VBD)
+					type = HI_OUT_VBD_STOP;
+				
+				else if (p_msg->argc == VSA_ID_EBD)
+					type = HI_OUT_EBD_STOP;
+			 	hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,type, 0);
 				break;		
 
         case SYS_MSG_GPS_UPDATE:
@@ -255,51 +262,83 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             case HI_OUT_CRD_ALERT:
                // voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
+              //  p_sys->led_blink_duration[LED_RED] = 0xFFFF;
+             //   p_sys->led_blink_period[LED_RED] = 15;
+             //   p_sys->led_blink_cnt[LED_RED] = 0;
 
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
-
+             //   p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+             	p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
                 break;
+
+			case HI_OUT_CRD_REAR_ALERT:
+                rt_timer_start(p_cms_envar->sys.timer_voc);
+             	p_sys->led_priority |= 1<<HI_OUT_CRD_REAR_ALERT;
+				break;
+				
             case HI_OUT_VBD_ALERT:
                // voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 10;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+               // p_sys->led_blink_duration[LED_RED] = 10;
+               // p_sys->led_blink_period[LED_RED] = 15;
+               // p_sys->led_blink_cnt[LED_RED] = 0;
+               // p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+			   p_sys->led_priority |= 1<<HI_OUT_VBD_ALERT;
                 break;
-
-			case HI_OUT_VBD_STATUS:
-                p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_RED] = 0;
 				
-                p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_GREEN] = 0;
-				break;				
-
 			case HI_OUT_EBD_ALERT:
               //  voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
               	rt_timer_start(p_cms_envar->sys.timer_voc);
-                p_sys->led_blink_duration[LED_RED] = 10;
-                p_sys->led_blink_period[LED_RED] = 15;
-                p_sys->led_blink_cnt[LED_RED] = 0;
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
-                break;	
-				
-			case HI_OUT_EBD_STATUS:
-				p_sys->led_blink_duration[LED_RED] = 0xFFFF;
-                p_sys->led_blink_period[LED_RED] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_RED] = 0;				
-                p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+               
+			   	p_sys->led_priority |= 1<<HI_OUT_EBD_ALERT;
+                break;
+
+			case HI_OUT_CRD_CANCEL:
+				if(p_cms_envar->vsa.alert_pend == 0)
+					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				p_sys->led_priority &= ~(1<<HI_OUT_CRD_ALERT);
+
 				break;
+
+			case HI_OUT_CRD_REAR_CANCEL:
+				if(p_cms_envar->vsa.alert_pend == 0)
+					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				p_sys->led_priority &= ~(1<<HI_OUT_CRD_REAR_CANCEL);
+
+				break;	
+
+			case HI_OUT_VBD_CANCEL:
+				if(p_cms_envar->vsa.alert_pend == 0)
+					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				p_sys->led_priority &= ~(1<<HI_OUT_VBD_ALERT);
+
+				break;
+
+			case HI_OUT_EBD_CANCEL:
+				if(p_cms_envar->vsa.alert_pend == 0)
+					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				p_sys->led_priority &= ~(1<<HI_OUT_EBD_ALERT);
+
+				break;
+				
+			case HI_OUT_VBD_STATUS:
+				p_sys->led_priority |= 1<<HI_OUT_VBD_STATUS;
+				break;
+			case HI_OUT_EBD_STATUS:
+				p_sys->led_priority |= 1<<HI_OUT_EBD_STATUS;
+				break;
+
+			case HI_OUT_VBD_STOP:
+				p_sys->led_priority &= ~(1<<HI_OUT_VBD_STATUS);
+				break;
+			case HI_OUT_EBD_STOP:
+				p_sys->led_priority &= ~(1<<HI_OUT_EBD_STATUS);
+				break;	
+
 				
             case HI_OUT_CANCEL_ALERT:
 				if(p_cms_envar->vsa.alert_pend == 0)
 					rt_timer_stop(p_cms_envar->sys.timer_voc);
+			#if 0	
                 p_sys->led_blink_duration[LED_RED] = 0;
                 p_sys->led_blink_period[LED_RED] = 0;
                 p_sys->led_blink_cnt[LED_RED] = 0;
@@ -311,21 +350,25 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 else{
                     p_sys->led_blink_period[LED_GREEN] = 20;
                 }
+			#endif	
+				p_sys->led_priority &= ~((1<<HI_OUT_EBD_ALERT)|(1<<HI_OUT_VBD_ALERT)|(1<<HI_OUT_CRD_ALERT));
                 break;
 
             case HI_OUT_GPS_LOST:
                 //voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
                	rt_timer_start(p_cms_envar->sys.timer_gps);
-                p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_period[LED_GREEN] = 20;
-                p_sys->led_blink_cnt[LED_GREEN] = 0;
+                //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
+                //p_sys->led_blink_period[LED_GREEN] = 20;
+                //p_sys->led_blink_cnt[LED_GREEN] = 0;
+                p_sys->led_priority &= ~(1<<HI_OUT_GPS_CAPTURED);
                 break;
 
             case HI_OUT_GPS_CAPTURED:
 				rt_timer_stop(p_cms_envar->sys.timer_gps);
-                p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
-                p_sys->led_blink_cnt[LED_GREEN] = 0;
+                //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
+                //p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
+                //p_sys->led_blink_cnt[LED_GREEN] = 0;
+                p_sys->led_priority |= 1<<HI_OUT_GPS_CAPTURED;
                 break;
 
             default:
@@ -335,6 +378,45 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
     else if (p_msg->id == SYS_MSG_HI_IN_UPDATE){
 
     }
+	if((p_sys->led_priority&(1<<HI_OUT_CRD_ALERT))||(p_sys->led_priority&(1<<HI_OUT_CRD_REAR_ALERT))\
+		||(p_sys->led_priority&(1<<HI_OUT_EBD_ALERT))||(p_sys->led_priority&(1<<HI_OUT_VBD_ALERT)))
+		{
+			p_sys->led_color.r = 1;//r=1,b=0,g=0
+			p_sys->led_color.b = 0;
+			p_sys->led_color.g = 0;
+		    p_sys->led_blink_duration = 0xFFFF;
+            p_sys->led_blink_period = 15;
+            p_sys->led_blink_cnt = 0;
+	}
+	else if((p_sys->led_priority&(1<<HI_OUT_EBD_STATUS))||(p_sys->led_priority&(1<<HI_OUT_VBD_STATUS)))
+		{
+			p_sys->led_color.r = 1;//r=1,b=0,g=1
+			p_sys->led_color.b = 0;
+			p_sys->led_color.g = 1;
+			p_sys->led_blink_duration= 0xFFFF;
+            p_sys->led_blink_period = 15;
+            p_sys->led_blink_cnt = 0;
+	}
+	else if(p_sys->led_priority&(1<<HI_OUT_GPS_CAPTURED))
+		{
+			p_sys->led_color.r = 0;//r=1,b=0,g=1
+			p_sys->led_color.b = 0;
+			p_sys->led_color.g = 1;
+			p_sys->led_blink_duration= 0xFFFF;
+            p_sys->led_blink_period = 0xFFFF;
+            p_sys->led_blink_cnt = 0;
+		}
+	else {
+			p_sys->led_color.r = 0;//r=0,b=0,g=1
+			p_sys->led_color.b = 0;
+			p_sys->led_color.g = 1;
+			p_sys->led_blink_duration= 0xFFFF;
+			p_sys->led_blink_period = 25;
+			p_sys->led_blink_cnt = 0;
+
+	}
+		
+	
 }
 
 void rt_hi_thread_entry(void *parameter)
@@ -343,6 +425,9 @@ void rt_hi_thread_entry(void *parameter)
     sys_msg_t msg, *p_msg = &msg;
     sys_envar_t *p_sys = (sys_envar_t *)parameter;
     int i;
+	static uint8_t ledss = 0xff;
+	int16_t breath_led = 0;
+	uint8_t led_light_dark = 1;
 
     rt_kprintf("%s: ---->\n", __FUNCTION__);
 
@@ -355,25 +440,43 @@ void rt_hi_thread_entry(void *parameter)
         }
 
         /* update led status */    
-        for(i=0;i<LEDn;i++){
-            if (p_sys->led_blink_period[i] == 0){/* always off */
-                led_off(i);
+
+            if (p_sys->led_blink_period == 0){/* always off */
+                led_off(p_sys->led_color);
             }
-            else if (p_sys->led_blink_period[i] == 0xFFFF){ /* always on */
-                led_on(i);
+            else if (p_sys->led_blink_period == 0xFFFF){ /* always on */
+				if(led_light_dark )
+					{
+                		led_on(p_sys->led_color);
+						Delay(breath_led++);
+						led_off(p_sys->led_color);
+						Delay(BREATH_CYCLE - breath_led);
+						if(breath_led >= BREATH_CYCLE) led_light_dark = 0;
+					}
+				else{
+						led_on(p_sys->led_color);
+						Delay(breath_led--);
+						led_off(p_sys->led_color);
+						Delay(BREATH_CYCLE - breath_led);
+						
+						if(breath_led <= 0) led_light_dark = 1;
+					}
             }
             else{ /* blink periodly */
-                if (++p_sys->led_blink_cnt[i] >= p_sys->led_blink_period[i]){
-                    led_blink(i);
-                    p_sys->led_blink_cnt[i] = 0;
-                    if(p_sys->led_blink_duration[i] != 0xFFFF){
-                        p_sys->led_blink_duration[i]--;
-                        if(p_sys->led_blink_duration[i] <= 0){
-                            p_sys->led_blink_period[i] = 0;
+                if (++p_sys->led_blink_cnt >= p_sys->led_blink_period){
+                    //led_blink(p_sys->led_color);
+                    if(ledss)led_on(p_sys->led_color);
+					else led_off(p_sys->led_color);
+					ledss = ~ledss;
+                    p_sys->led_blink_cnt = 0;
+                    if(p_sys->led_blink_duration != 0xFFFF){
+                        p_sys->led_blink_duration--;
+                        if(p_sys->led_blink_duration <= 0){
+                            p_sys->led_blink_period = 0;
                         }
                     }
                 }
-            }
+            
         }
 
         rt_thread_delay(1);
