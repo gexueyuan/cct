@@ -163,16 +163,11 @@ typedef struct _sys_envar{
     uint32_t hi_timer_cnt;
 
     uint32_t led_priority;
-<<<<<<< HEAD
     led_color_t led_color;
     uint16_t led_blink_duration;
     uint16_t led_blink_period;
     uint16_t led_blink_cnt;
-=======
-    uint16_t led_blink_duration[3];
-    uint16_t led_blink_period[3];
-    uint16_t led_blink_cnt[3];
->>>>>>> a4eb58d7c6595760e11833b2cd80beb345937a57
+
 
     /* os related */
     rt_thread_t task_sys_mng;
