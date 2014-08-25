@@ -135,7 +135,11 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				//uint32_t type = 0;
 			
 				if (p_msg->argc == VSA_ID_CRD){
+<<<<<<< HEAD
 					type = HI_OUT_CRD_CANCEL;
+=======
+					type = HI_OUT_CRD_ALERT;
+>>>>>>> a4eb58d7c6595760e11833b2cd80beb345937a57
 				}
 				else if (p_msg->argc == VSA_ID_VBD){
 					type = HI_OUT_VBD_CANCEL;
@@ -265,6 +269,12 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
               //  p_sys->led_blink_duration[LED_RED] = 0xFFFF;
              //   p_sys->led_blink_period[LED_RED] = 15;
              //   p_sys->led_blink_cnt[LED_RED] = 0;
+<<<<<<< HEAD
+=======
+
+             //   p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
+             	p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
+>>>>>>> a4eb58d7c6595760e11833b2cd80beb345937a57
 
              //   p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
              	p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
@@ -284,11 +294,20 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                // p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
 			   p_sys->led_priority |= 1<<HI_OUT_VBD_ALERT;
                 break;
+<<<<<<< HEAD
 				
+=======
+
+			case HI_OUT_VBD_STATUS:
+				p_sys->led_priority |= 1<<HI_OUT_VBD_STATUS;
+				break;				
+
+>>>>>>> a4eb58d7c6595760e11833b2cd80beb345937a57
 			case HI_OUT_EBD_ALERT:
               //  voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
               	rt_timer_start(p_cms_envar->sys.timer_voc);
                
+<<<<<<< HEAD
 			   	p_sys->led_priority |= 1<<HI_OUT_EBD_ALERT;
                 break;
 
@@ -319,6 +338,10 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				p_sys->led_priority &= ~(1<<HI_OUT_EBD_ALERT);
 
 				break;
+=======
+			   p_sys->led_priority |= 1<<HI_OUT_EBD_ALERT;
+                break;	
+>>>>>>> a4eb58d7c6595760e11833b2cd80beb345937a57
 				
 			case HI_OUT_VBD_STATUS:
 				p_sys->led_priority |= 1<<HI_OUT_VBD_STATUS;
