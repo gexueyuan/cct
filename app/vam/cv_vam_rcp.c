@@ -269,15 +269,12 @@ int rcp_parse_evam(vam_envar_t *p_vam,
         p_sta->s.acce.lon = decode_acce_lon(p_evam->motion.acce.lon);
         p_sta->s.acce.lat = decode_acce_lat(p_evam->motion.acce.lat);
         p_sta->s.acce.vert = decode_acce_vert(p_evam->motion.acce.vert);
-        p_sta->s.acce.yaw = decode_acce_yaw(p_evam->motion.acce.yaw);
-      
-        /* the same alert status inform the app layer once */
-        if(p_sta->s.alert_mask != alert_mask)
-        {
-            p_sta->s.alert_mask = alert_mask;
-            if (p_vam->evt_handler[VAM_EVT_PEER_ALARM]){
-                (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&p_sta->s);
-            }
+        p_sta->s.acce.yaw = decode_acce_yaw(p_evam->motion.acce.yaw);     
+        p_sta->s.alert_mask = alert_mask;
+
+        /* inform the app layer once */
+        if (p_vam->evt_handler[VAM_EVT_PEER_ALARM]){
+            (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&p_sta->s);
         }
     }
     return 0;
@@ -302,6 +299,8 @@ int rcp_parse_msg(vam_envar_t *p_vam,
             break;
 
         case RCP_MSG_ID_EVAM:
+            /* receive evam, then pause sending bsm msg */
+            vsm_pause_bsm_broadcast(p_vam);
             rcp_parse_evam(p_vam, rxinfo, databuf, datalen);
             break;
 

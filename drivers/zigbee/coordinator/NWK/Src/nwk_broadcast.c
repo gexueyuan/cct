@@ -264,12 +264,37 @@ uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t
 			sumCount = 0;
 			packetErrorRate = lostSeqSum*1000/(255+lostSeqSum);
 		}		
-		/*
-		if(sumCount != 0)
-		    rt_kprintf("src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
-		else 
-			  rt_kprintf("                     src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
-*/
+		
+	//	if(sumCount != 0)
+//		{
+//			outDebug[0] = srcAddr;
+//			outDebug[1] = srcAddr>>8;
+//			outDebug[2] = data[1];
+//			outDebug[3] = adjLostSeq;
+//			outDebug[4] = maxAdjLostSeq;
+//			outDebug[5] = packetErrorRate;
+//			outDebug[6] = packetErrorRate>>8;			
+//			outDebug[7] = lostSeqSum;
+//			outDebug[8] = lostSeqSum>>8;			
+//			outDebug[9] = sumCount;
+//			outDebug[10] = radius;
+//			outDebug[11] = rssi;	
+//			outDebug[12] = zigbeeDistance;
+//			outDebug[13] = zigbeeDistance>>8;
+//			outDebug[14] = zigbeeDistance>>16;
+//			outDebug[15] = zigbeeDistance>>24;
+//			for (int i=0; i<16; i++)
+//			{
+//        while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == 0);      
+//        USART2->DR = (outDebug[i] & (uint16_t)0x01FF);    	
+//			}				
+//		}
+
+	//	    rt_kprintf("src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
+	//	else 
+	//		  rt_kprintf("                     src=%d, seq=%d, adjLostSeq=%d, maxAdjLostSeq=%d, packetErrorRate=%d%%, lostSeqSum=%d, sumCount=%d, radius=%d, rssi=%d  ", srcAddr,data[1],adjLostSeq,maxAdjLostSeq,packetErrorRate,lostSeqSum,sumCount,radius,rssi);
+	
+	
 	}
 	else sumCount = 0;
 

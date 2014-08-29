@@ -132,7 +132,7 @@ int32_t vam_get_peer_status(uint8_t *pid, vam_stastatus_t *local)
 
 
 
-int32_t vam_get_peer_relative_pos(uint8_t *pid)
+int32_t vam_get_peer_relative_pos(uint8_t *pid,uint8_t vsa_print_en)
 {
     vam_envar_t *p_vam = p_vam_envar;
     vam_sta_node_t *p_sta = NULL;
@@ -148,7 +148,7 @@ int32_t vam_get_peer_relative_pos(uint8_t *pid)
 	}
     rt_sem_release(p_vam->sem_sta);
 
-    return (int32_t)vsm_get_relative_pos(&p_vam->local,&sta);
+    return (int32_t)vsm_get_relative_pos(&p_vam->local,&sta,vsa_print_en);
 }
 
 

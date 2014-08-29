@@ -32,7 +32,7 @@
 #include "bma250e.h"
 #endif
 
-static gsnr_log_level_t gsnr_log_lvl = GSNR_WARNING;
+static gsnr_log_level_t gsnr_log_lvl = GSNR_NOTICE;
 
 GSENSOR_INFO g_info ;
 GSENSOR_INFO g_hori_info ; //三轴加速度在水平面的分量
@@ -41,12 +41,13 @@ GSENSOR_INFO gSensor_Average, Acce_Sum, Acce_V, gSensor_Static, Acce_Ahead, Acce
 __IO static uint8_t init_flag = 0;
 uint8_t drivint_step = 0 ;
 int32_t s_cnt = 0;
-int32_t rd_cnt = 30 ;
+int32_t rd_cnt = 0 ;
 uint8_t ahead_flag = 0 ;
 
-float	SHARP_RIGHT_THRESOLD    =	8;//5.5;
+float STATIC_ACC_THR = 0.3;  //obd use 0.2
+float	SHARP_RIGHT_THRESOLD    =	5.5;
 uint8_t	SHARP_RIGHT_CNT			= 	6;
-float	SHARP_LEFT_THRESOLD		=	-8;//-5.5;
+float	SHARP_LEFT_THRESOLD		=	-5.5;
 uint8_t	SHARP_LEFT_CNT			= 	6;
 float	SHARP_SLOWDOWN_THRESOLD	=   -5.5; //obd use: -5.5
 uint8_t	SHARP_SLOWDOWN_CNT		=	3;
@@ -241,7 +242,7 @@ void GsensorReadAcc(float* pfData)
     for(i=0; i<6; i++)
     {
         BMA250E_Read(&buffer[i], BMA250E_OUT_X_L_ADDR+i, 1);
-        GSNR_LOG(GSNR_DEBUG, "%02x, ", buffer[i]);
+        //GSNR_LOG(GSNR_DEBUG, "%02x, ", buffer[i]);
     }
     
     for(i=0; i<3; i++)
@@ -371,8 +372,13 @@ int32_t GetStaticVal(GSENSOR_INFO gsensor_dat)
 	    gSensor_Static.x += gsensor_dat.x;
 		gSensor_Static.y += gsensor_dat.y;
 		gSensor_Static.z += gsensor_dat.z;
-		if((fabs(last_static_x-gsensor_dat.x)>0.2) || (fabs(last_static_y-gsensor_dat.y)>0.2) || (fabs(last_static_z-gsensor_dat.z)>0.2))
+		if((fabs(last_static_x-gsensor_dat.x)>STATIC_ACC_THR) || 
+            (fabs(last_static_y-gsensor_dat.y)>STATIC_ACC_THR) ||  
+            (fabs(last_static_z-gsensor_dat.z)>STATIC_ACC_THR))
 		{
+      		printAcc(GSNR_NOTICE, "停车态加速度波动过大xyz\r\n", fabs(last_static_x-gsensor_dat.x), 
+                fabs(last_static_y-gsensor_dat.y), 
+                fabs(last_static_z-gsensor_dat.z));
 			last_static_x = gsensor_dat.x ;
 			last_static_y = gsensor_dat.y ;
 			last_static_z = gsensor_dat.z ;
@@ -439,7 +445,8 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 	if((G_Action.speed > AHEAD_SPEED_THRESOD) && (rd_cnt<AHEAD_CNT) && 
 		(G_Action.vehicle_accel_value > VEHICLE_ACCLE_VALE) && 
 		(G_Action.diff_angle < VEHICLE_ANGLE) &&
-		(G_Action.is_locate == __TRUE))
+		(G_Action.is_locate == __TRUE) &&
+		(p_vam_envar->working_param.bsm_hops != 1)) //bsm_hops参数未用, 此处暂用于test
 
 	{
 		Acce_Sum.x += gsensor_dat.x;
@@ -450,11 +457,14 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 		printAcc(GSNR_DEBUG, "RecDirection", Acce_Sum.x,Acce_Sum.y,Acce_Sum.z);
 		rd_cnt++;
 	}
-	else if (rd_cnt == AHEAD_CNT)
+	else if ((rd_cnt == AHEAD_CNT) || (p_vam_envar->working_param.bsm_hops == 1))
 	{
-        Acce_Sum.x = -60; //电源口方向为+x, 此处设为-， 当成车尾
-        Acce_Sum.y = 1;
-        Acce_Sum.z = 300;
+        if(p_vam_envar->working_param.bsm_hops == 1)
+        {
+            Acce_Sum.x = -60; //电源口方向为+x, 此处设为-， 当成车尾
+            Acce_Sum.y = 1;
+            Acce_Sum.z = 300;
+        }
 
 		Acce_Sum.x /= AHEAD_CNT;
 		Acce_Sum.y /= AHEAD_CNT;
@@ -520,14 +530,14 @@ void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 {
 	static int32_t cnt = 0 ;
 	sys_envar_t *p_sys = &p_cms_envar->sys;
-	
+	static uint8_t key_press = 0;
+
 	if(acce_k > SHARP_RIGHT_THRESOLD)	
 	{
 		printAcc(GSNR_NOTICE, "右转xyz", acce_ahead, acce_k, acce_k_x);
 		cnt++;
 		if(cnt >= SHARP_RIGHT_CNT)		  //右转
 		{
-			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
 			GSNR_LOG(GSNR_WARNING, "发生急右转\r\n\n");
 			cnt = 0 ;
 		}
@@ -538,7 +548,6 @@ void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 		cnt++;
 		if(cnt >= SHARP_LEFT_CNT)		  //左转
 		{	
-			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
 			GSNR_LOG(GSNR_WARNING, "发生急左转\r\n\n");
 			cnt = 0 ;
 		}
@@ -569,6 +578,25 @@ void AcceDetect(float acce_ahead, float acce_k, float acce_k_x)
 	{
 		cnt = 0 ;
 	}
+    
+    if(acce_k_x <= -5)
+    {
+        if(0 == key_press)
+        {
+    		printAcc(GSNR_NOTICE, "翻转xyz",acce_ahead, acce_k, acce_k_x);
+			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
+            key_press = 1;
+        }
+    }
+    else if(acce_k_x > 3)
+    {
+        if(key_press == 1)
+        {
+    		printAcc(GSNR_NOTICE, "翻转xyz",acce_ahead, acce_k, acce_k_x);
+			sys_add_event_queue(p_sys,SYS_MSG_KEY_PRESSED,0,1,NULL);
+            key_press = 0;
+        }
+    }
 
 }
 void AcceHandle(GSENSOR_INFO gsensor_data)

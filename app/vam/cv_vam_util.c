@@ -278,8 +278,8 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }
 
-
-double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
+uint8_t print_flag = 0xff;
+double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest,uint8_t vsa_print_en)
 {
     double lat1, lng1, lat2, lng2, lat3, lng3;
     double distance_1_2, distance_2_3;
@@ -342,8 +342,8 @@ double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
 				   _directfromangle((int)angle), (int)angle,\
 				  (int)delta, (int)distance_1_2);
 */
-//#if 0		
-    rt_kprintf("My head:%s(%d),ID:%d%d%d%d, Your pos:%s(%d),ID:%d%d%d%d, Our delta:%d, distance:%d\n", \
+if((print_flag)&&(vsa_print_en))	
+    rt_kprintf("tick =  %lu, My head:%s(%d),ID:%d%d%d%d, Your pos:%s(%d),ID:%d%d%d%d, Our delta:%d, distance:%d\n",rt_tick_get(), \
                _directfromangle((int)p_src->dir), (int)p_src->dir,p_src->pid[0],p_src->pid[1],p_src->pid[2],p_src->pid[3],\
                _directfromangle((int)p_dest->dir), (int)p_dest->dir,p_dest->pid[0],p_dest->pid[1],p_dest->pid[2],p_dest->pid[3],\
               (int)delta, (int)distance_1_2);
@@ -351,8 +351,11 @@ double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }
 
-
-
+void set_print(void)
+{
+	print_flag = ~print_flag;
+}
+FINSH_FUNCTION_EXPORT(set_print,close or open  information of printing);
 double vsm_get_relative_dir(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
 {
     double delta;

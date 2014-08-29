@@ -176,18 +176,20 @@ static void gps_read_data(rt_device_t dev)
 				__GPSBuff.PpBuf[__GPSBuff.Pipe].Len %= GPS_BUFF_SIZE;
 				__GPSBuff.PpBuf[__GPSBuff.Pipe].Flag = 0;
 
-#if 1
+
                 if((0 == cfg_flag) && (0 == memcmp(__GPSBuff.PpBuf[__GPSBuff.Pipe].Buf, "$GPTXT", 6)))
                 {
                     /* got ublox GPTXT msg. config gps baud to 115200 */
                     gps_cfg_msg();
-                    rt_thread_delay(1);
+                    rt_thread_delay(1);									
+					gps_cfg_rate(5);
+					rt_thread_delay(1);
                     gps_cfg_prt();
                     rt_thread_delay(1);
                     gps_set_host_baudrate(BAUD_RATE_115200);
+					rt_thread_delay(1);
                     cfg_flag = 1;
-                }
-#endif                    
+                }                   
                 {
                     sys_msg_t msg;
                     msg.id = VAM_MSG_GPSDATA;
@@ -206,7 +208,6 @@ static void gps_read_data(rt_device_t dev)
 					__GPSBuff.PpBuf[__GPSBuff.Pipe].Len++;
 					__GPSBuff.PpBuf[__GPSBuff.Pipe].Len %= GPS_BUFF_SIZE;
 				}
-#if 1
                 else
                 {
                     /* receive messy code because of baudrate(9600) is not correct, 
@@ -218,7 +219,6 @@ static void gps_read_data(rt_device_t dev)
                     }
                     
                 }
-#endif
 			}
 		}
 		else{
@@ -234,17 +234,6 @@ void rt_gps_thread_entry (void *parameter)
 	dev = rt_device_find(RT_GPS_DEVICE_NAME);
 	rt_device_open(dev, RT_DEVICE_OFLAG_RDWR);
 
-#if 0
-    rt_thread_delay(SECOND_TO_TICK(1));
-    /* config ublox nmea type . config gps baud to 115200 */
-    gps_cfg_msg();
-    rt_thread_delay(1);
-    gps_cfg_prt();
-    rt_thread_delay(1);
-    gps_set_host_baudrate(BAUD_RATE_115200);     
-    rt_thread_delay(1);
-    gps_cfg_rate(5);
-#endif
 	while(1){
 		gps_read_data(dev);
 		rt_thread_delay(1);
@@ -279,7 +268,7 @@ void gps_deinit(void)
 	gps_recv_cb = NULL;	
 }
 
-
+FINSH_FUNCTION_EXPORT(gps_cfg_rate, debug: set gps rate);
 //==============================================================================
 //                                   0ooo
 //                          ooo0     (   ) 

@@ -75,6 +75,21 @@ void vsm_stop_bsm_broadcast(vam_envar_t *p_vam)
     rt_timer_stop(p_vam->timer_send_bsm);
 }
 
+void vsm_pause_bsm_broadcast(vam_envar_t *p_vam)
+{
+    uint16_t period;
+    rt_tick_t ticks;
+
+    if ((p_vam->working_param.bsm_pause_mode == 1) && (!(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)))
+    {
+        p_vam->flag |= VAM_FLAG_TX_BSM_PAUSE;
+        period = p_vam->working_param.bsm_pause_hold_time;
+        ticks = SECOND_TO_TICK(period);      
+        rt_timer_control(p_vam->timer_bsm_pause, RT_TIMER_CTRL_SET_TIME, &ticks);
+        rt_timer_start(p_vam->timer_bsm_pause);
+    }
+}
+
 void timer_send_bsm_callback(void* parameter)
 {
     vam_envar_t *p_vam = (vam_envar_t *)parameter;
@@ -137,16 +152,6 @@ void vsm_start_evam_broadcast(vam_envar_t *p_vam)
     ticks = MS_TO_TICK(period);
     rt_timer_control(p_vam->timer_send_evam, RT_TIMER_CTRL_SET_TIME, &ticks);
     rt_timer_start(p_vam->timer_send_evam);
-
-    /* pause sending bsm msg */
-    if ((p_vam->working_param.bsm_pause_mode == 1) && (!(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)))
-    {
-        p_vam->flag |= VAM_FLAG_TX_BSM_PAUSE;
-        period = p_vam->working_param.bsm_pause_hold_time;
-        ticks = SECOND_TO_TICK(period);      
-        rt_timer_control(p_vam->timer_bsm_pause, RT_TIMER_CTRL_SET_TIME, &ticks);
-        rt_timer_start(p_vam->timer_bsm_pause);
-    }
 }
 
 void timer_send_evam_callback(void* parameter)
@@ -155,6 +160,9 @@ void timer_send_evam_callback(void* parameter)
     static uint8_t count = VAM_NO_ALERT_EVAM_TX_TIMES;
     if (p_vam->flag&VAM_FLAG_TX_EVAM)
     {
+        /* broadcast evam, then pause bsm broadcast */
+        vsm_pause_bsm_broadcast(p_vam);
+
         vam_add_event_queue(p_vam, VAM_MSG_RCPTX, 0, RCP_MSG_ID_EVAM, NULL);
         /* 所有alter已取消 */
         if(p_vam->local.alert_mask == 0)
@@ -165,7 +173,7 @@ void timer_send_evam_callback(void* parameter)
                 p_vam->flag &= ~VAM_FLAG_TX_EVAM;
                 rt_timer_stop(p_vam->timer_send_evam);
 
-                /* don't wait for timer_bsm_pause. restart to send bsm */
+                /* don't wait timer_bsm_pause timeout. restart to send bsm */
                 if(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)
                 {
                     p_vam->flag &= ~VAM_FLAG_TX_BSM_PAUSE;
@@ -221,7 +229,6 @@ void vam_update_sta(vam_envar_t *p_vam)
     list_head_t *pos;
     list_head_t *head = &p_vam->neighbour_list;
     vam_stastatus_t sta;
-    uint8_t updata_alter_flag = 0;
 
 //    rt_kprintf("%s--->\n", __FUNCTION__);
 
@@ -235,26 +242,28 @@ void vam_update_sta(vam_envar_t *p_vam)
         p_sta = (vam_sta_node_t *)pos;
         pos = pos->next;
 
-        if ((p_sta->alert_life-- <= 0) && (p_sta->s.alert_mask)){
+        if(p_sta->life)
+            p_sta->life--;
+        if(p_sta->alert_life)
+            p_sta->alert_life--;
+        
+        if ((p_sta->alert_life == 0) && (p_sta->s.alert_mask) ){
             rt_kprintf("one neighbour's alert is timeout to canceled.\n");  
             p_sta->s.alert_mask = 0;
             memcpy(&sta, &p_sta->s, sizeof(vam_stastatus_t));
-            updata_alter_flag = 1;
+            /* one neighbours's alert msg timeout */
+            if(p_vam->evt_handler[VAM_EVT_PEER_ALARM]){
+                (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&sta);
+            }  
         }
 
-        p_sta->life--;
-        if (p_sta->life <= 0){
+        if (p_sta->life == 0 && p_sta->alert_life == 0){
             rt_kprintf("one neighbour is kick out\n");
             list_move_tail(&p_sta->list, &p_vam->sta_free_list);
         }
     }
     rt_sem_release(p_vam->sem_sta);
-
-    /* one neighbours's alert msg timeout */
-    if((p_vam->evt_handler[VAM_EVT_PEER_ALARM]) && updata_alter_flag){
-        (p_vam->evt_handler[VAM_EVT_PEER_ALARM])(&sta);
-    }  
-
+    
 }
 
 void timer_neigh_time_callback(void* parameter)
@@ -284,9 +293,9 @@ void vam_list_sta(void)
     rt_kprintf("neighbor node:%d\n", VAM_NEIGHBOUR_MAXNUM - i);
 
 	list_for_each_entry(p_sta, vam_sta_node_t, &p_vam->neighbour_list, list){
-        rt_kprintf("STA:[%02x-%02x-%02x-%02x], life:%d, alert_mask:%d\n",\
+        rt_kprintf("STA:[%02x-%02x-%02x-%02x], life:%d, alert_life:%d alert_mask:%d\n",\
             p_sta->s.pid[0],p_sta->s.pid[1],p_sta->s.pid[2],p_sta->s.pid[3],\
-            p_sta->life, p_sta->s.alert_mask);
+            p_sta->life, p_sta->alert_life, p_sta->s.alert_mask);
 	}
     rt_sem_release(p_vam->sem_sta);
 }

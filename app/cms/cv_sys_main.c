@@ -79,9 +79,9 @@ int rt_application_init(void)
 {
     rt_thread_t tid;
 
-	rt_components_init();
-	rt_platform_init();
-
+		rt_components_init();
+		rt_platform_init();
+	
     rt_kprintf("system clock: %d\n", SystemCoreClock);
 
     tid = rt_thread_create("t-init",

@@ -202,6 +202,7 @@ extern vam_envar_t *p_vam_envar;
 void vsm_start_bsm_broadcast(vam_envar_t *p_vam);
 void vsm_stop_bsm_broadcast(vam_envar_t *p_vam);
 void vsm_update_bsm_bcast_timer(vam_envar_t *p_vam);
+void vsm_pause_bsm_broadcast(vam_envar_t *p_vam);
 
 rt_err_t vam_add_event_queue(vam_envar_t *p_vam, 
                              uint16_t msg_id, 
@@ -225,12 +226,12 @@ void lip_update_local(t_nmea_rmc *p_rmc, float *p_accu);
 void lip_update_local_acc(float x, float y, float z);
 
 double vsm_get_distance(vam_position_t *p_src, vam_position_t *p_dest);
-double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest);
+double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest,uint8_t vsa_print_en);
 double vsm_get_relative_dir(vam_stastatus_t *p_src, vam_stastatus_t *p_dest);
 
 int32_t vam_start(void);
 int32_t vam_set_event_handler(uint32_t evt, vam_evt_handler callback);
-int32_t vam_get_peer_relative_pos(uint8_t *pid);
+int32_t vam_get_peer_relative_pos(uint8_t *pid,uint8_t vsa_print_en);
 int32_t vam_get_peer_relative_dir(uint8_t *pid);
 int32_t vam_get_peer_alert_status(uint16_t *alert_mask);
 int32_t vam_active_alert(uint32_t alerttype);

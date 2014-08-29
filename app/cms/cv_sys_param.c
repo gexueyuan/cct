@@ -245,7 +245,7 @@ int param_set(const char *param, uint16_t value)
 
 		}
 
-	if(strcmp(param,"vam.bbp")||strcmp(param,"vsa.dap")||strcmp(param,"vam.ebp"))
+	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp"))
 		if(value > 0xff)
 			{
 				//value = 0xff;

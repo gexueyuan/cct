@@ -28,7 +28,7 @@
 
 #define HUMAN_ITERFACE_GPS_VOC         SECOND_TO_TICK(5)
 
-#define BREATH_CYCLE                   36 
+#define BREATH_CYCLE                   300 
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
@@ -41,10 +41,18 @@ extern void led_on(led_color_t led);
 extern void led_off(led_color_t led);
 extern void led_blink(led_color_t led);
 
-extern void Delay(volatile uint32_t nCount);
+//extern void Delay(volatile uint32_t nCount);
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
+void Delay_led(volatile uint32_t nCount)
+	{
+	  volatile uint32_t index = 0; 
+	  for(index = (10 * nCount); index != 0; index--)
+	  {
+	  }
+	}
+
 
 rt_err_t sys_add_event_queue(sys_envar_t *p_sys, 
                              uint16_t msg_id, 
@@ -252,6 +260,8 @@ void timer_out_vsa_process(void* parameter)
 
 	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD))	
 		voc_play(16000, (uint8_t *)voice_16k_8bits+6400, voice_16k_8bitsLen-6400);// 1 notice + vioce
+	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))	
+		voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);// 1 notice + vioce
 
 	rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
 }
@@ -302,7 +312,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 			case HI_OUT_CRD_REAR_CANCEL:
 				if(p_cms_envar->vsa.alert_pend == 0)
 					rt_timer_stop(p_cms_envar->sys.timer_voc);
-				p_sys->led_priority &= ~(1<<HI_OUT_CRD_REAR_CANCEL);
+				p_sys->led_priority &= ~(1<<HI_OUT_CRD_REAR_ALERT);
 
 				break;	
 
@@ -444,23 +454,40 @@ void rt_hi_thread_entry(void *parameter)
                 led_off(p_sys->led_color);
             }
             else if (p_sys->led_blink_period == 0xFFFF){ /* always on */
+				led_on(p_sys->led_color);
+				#if 0
 				if(led_light_dark )
 					{
                 		led_on(p_sys->led_color);
-						Delay(breath_led);
+						Delay_led(breath_led);
+						//rt_thread_delay(breath_led)
 						led_off(p_sys->led_color);
-						Delay(BREATH_CYCLE - breath_led);
+						Delay_led(BREATH_CYCLE - breath_led);
 						breath_led++;
-						if(breath_led >= BREATH_CYCLE) led_light_dark = 0;
+						if(breath_led >= BREATH_CYCLE) 
+							{
+
+								led_light_dark = 0;
+								//rt_thread_delay(200);
+								led_on(p_sys->led_color);
+								Delay_led(50);
+							}
 					}
 				else{
 						led_on(p_sys->led_color);
-						Delay(breath_led);
+						Delay_led(breath_led);
 						led_off(p_sys->led_color);
-						Delay(BREATH_CYCLE - breath_led);
+						Delay_led(BREATH_CYCLE - breath_led);
 						breath_led--;
-						if(breath_led <= 0) led_light_dark = 1;
+						if(breath_led <= 0) 
+							{
+
+								led_light_dark = 1;
+								//rt_thread_delay(200);
+								Delay_led(50);
+							}
 					}
+				#endif
             }
             else{ /* blink periodly */
                 if (++p_sys->led_blink_cnt >= p_sys->led_blink_period){

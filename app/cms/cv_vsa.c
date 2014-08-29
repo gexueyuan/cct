@@ -96,7 +96,7 @@ static int crd_judge(vsa_envar_t *p_vsa)
     int32_t dis_actual, dis_alert;
 
     /* put the beginning only in order to output debug infomations */
-    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
+    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid,1);
     dis_alert = (int32_t)((p_vsa->local.speed*2.0f - p_vsa->remote.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
     /* end */
 
@@ -138,8 +138,8 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
     int32_t dis_actual, dis_alert;
 
     /* put the beginning only in order to output debug infomations */
-    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
-    dis_alert = (int32_t)((p_vsa->local.speed*2.0f - p_vsa->remote.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
+    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid,0);
+    dis_alert = (int32_t)((p_vsa->remote.speed*2.0f - p_vsa->local.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
     /* end */
 
     if (p_vsa->remote.speed <= p_vsa->working_param.danger_detect_speed_threshold){
@@ -158,12 +158,12 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
     }
 
     /* remote is behind of local */
-    if (dis_actual <= 0){
+    if (dis_actual >= 0){
 		
         return 0;
     }
 
-    if (dis_actual > dis_alert){
+    if ((-dis_actual) > dis_alert){
         return 0;
     }
 	
@@ -380,7 +380,7 @@ static int ebd_judge(vsa_envar_t *p_vsa)
 //#if 0
     int32_t dis_actual;
 
-    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);
+    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid,0);
 	    /* remote is behind of local */
     if (dis_actual <= 0)
         return 0;
@@ -450,7 +450,7 @@ static int vbd_judge(vsa_envar_t *p_vsa)
 //#if 0
     int32_t dis_actual;
 
-    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid);// relative position
+    dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid,0);// relative position
 
     if (p_vsa->local.speed <= p_vsa->working_param.danger_detect_speed_threshold){
         return 0;

@@ -77,7 +77,5 @@ void STM_EVAL_LEDOff(Led_TypeDef Led)
 void STM_EVAL_LEDBlink(Led_TypeDef Led)
 {
   GPIO_PORT[Led]->ODR ^= GPIO_PIN[Led];  
- // GPIO_PORT[0]->ODR ^= GPIO_PIN[0];
- // GPIO_PORT[2]->ODR ^= GPIO_PIN[2];
 }
 
