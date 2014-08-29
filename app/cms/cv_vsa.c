@@ -157,7 +157,9 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-    /* remote is behind of local */
+	
+
+    /*local  is behind of remote */
     if (dis_actual >= 0){
 		
         return 0;
@@ -166,7 +168,9 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
     if ((-dis_actual) > dis_alert){
         return 0;
     }
-	
+
+	if(vsm_get_rear_dir(&p_vsa->remote) * dis_actual < 0)
+		return 0;
 	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
 
 	rt_kprintf("Rear end danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);

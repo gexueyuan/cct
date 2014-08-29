@@ -228,6 +228,8 @@ void lip_update_local_acc(float x, float y, float z);
 double vsm_get_distance(vam_position_t *p_src, vam_position_t *p_dest);
 double vsm_get_relative_pos(vam_stastatus_t *p_src, vam_stastatus_t *p_dest,uint8_t vsa_print_en);
 double vsm_get_relative_dir(vam_stastatus_t *p_src, vam_stastatus_t *p_dest);
+int8_t vsm_get_rear_dir(vam_stastatus_t *p_dest);
+
 
 int32_t vam_start(void);
 int32_t vam_set_event_handler(uint32_t evt, vam_evt_handler callback);

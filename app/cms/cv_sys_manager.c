@@ -111,7 +111,7 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             vam_start();
             vsa_start();
 
-            hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_GPS_LOST, 0);
+            hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_SYS_INIT, 0);
 
             break;
 		case SYS_MSG_KEY_PRESSED:
@@ -275,6 +275,10 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
     if (p_msg->id == SYS_MSG_HI_OUT_UPDATE){
         switch(p_msg->argc){
+			case HI_OUT_SYS_INIT:
+				voc_play(16000, (uint8_t *)notice_16k_8bits, 3200);
+				break;
+				
             case HI_OUT_CRD_ALERT:
                // voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
@@ -366,7 +370,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 
             case HI_OUT_GPS_LOST:
                 //voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
-               	rt_timer_start(p_cms_envar->sys.timer_gps);
+               	//rt_timer_start(p_cms_envar->sys.timer_gps);
                 //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_period[LED_GREEN] = 20;
                 //p_sys->led_blink_cnt[LED_GREEN] = 0;
@@ -374,7 +378,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 break;
 
             case HI_OUT_GPS_CAPTURED:
-				rt_timer_stop(p_cms_envar->sys.timer_gps);
+				//rt_timer_stop(p_cms_envar->sys.timer_gps);
                 //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_cnt[LED_GREEN] = 0;

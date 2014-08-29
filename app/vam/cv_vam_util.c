@@ -375,4 +375,11 @@ double vsm_get_relative_dir(vam_stastatus_t *p_src, vam_stastatus_t *p_dest)
     return delta;
 }
 
+int8_t vsm_get_rear_dir(vam_stastatus_t *p_dest)
+{
+	if((p_dest->dir>270)||(p_dest->dir<90))
+		return -1;
+	else return 1;
+	
+}
 

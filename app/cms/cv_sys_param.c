@@ -38,7 +38,7 @@ cfg_param_t cms_param, *p_cms_param;
 const char* env_var[] = {"id","vam.bh","vam.bbm","vam.bbs","vam.bpm","vam.bpht","vam.bbp","vam.eh","vam.ebt","vam.ebp",\
 	                  	 "vsa.ddst","vsa.dap","vsa.cs","vsa.em","vsa.eat","vsa.eaht","print"};
 
-uint8_t	param_init_words[] = "Vanet-param";
+uint8_t	param_init_words[] = "Vanet-param0";
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
@@ -147,24 +147,24 @@ void param_get(void)
 	//drv_fls_read(PARAM_ADDR,(uint8_t *)param_temp,sizeof(cfg_param_t));
 		
     rt_kprintf("-------------------parameters in ram------------------\n");	
-	rt_kprintf("ID(id)=%d%d%d%d\n",p_cms_param->pid[0],p_cms_param->pid[1],p_cms_param->pid[2],p_cms_param->pid[3]);
-    rt_kprintf("vam.bsm_hops(vam.bh)=%d\n", p_cms_param->vam.bsm_hops);
-    rt_kprintf("vam.bsm_boardcast_mode(vam.bbm)=%d\n", p_cms_param->vam.bsm_boardcast_mode);
-    rt_kprintf("vam.bsm_boardcast_saftyfactor(vam.bbs)=%d\n", p_cms_param->vam.bsm_boardcast_saftyfactor);
-    rt_kprintf("vam.bsm_pause_mode(vam.bpm)=%d\n", p_cms_param->vam.bsm_pause_mode);
-    rt_kprintf("vam.bsm_pause_hold_time(vam.bpht)=%d (s)\n", p_cms_param->vam.bsm_pause_hold_time);
-    rt_kprintf("vam.bsm_boardcast_period(vam.bbp)=%d (ms)\n", p_cms_param->vam.bsm_boardcast_period);
+	rt_kprintf("ID(0)=%d%d%d%d\n",p_cms_param->pid[0],p_cms_param->pid[1],p_cms_param->pid[2],p_cms_param->pid[3]);
+    rt_kprintf("vam.bsm_hops(1)=%d\n", p_cms_param->vam.bsm_hops);
+    rt_kprintf("vam.bsm_boardcast_mode(2)=%d\n", p_cms_param->vam.bsm_boardcast_mode);
+    rt_kprintf("vam.bsm_boardcast_saftyfactor(3)=%d\n", p_cms_param->vam.bsm_boardcast_saftyfactor);
+    rt_kprintf("vam.bsm_pause_mode(4)=%d\n", p_cms_param->vam.bsm_pause_mode);
+    rt_kprintf("vam.bsm_pause_hold_time(5)=%d (s)\n", p_cms_param->vam.bsm_pause_hold_time);
+    rt_kprintf("vam.bsm_boardcast_period(6)=%d (ms)\n", p_cms_param->vam.bsm_boardcast_period);
 
-    rt_kprintf("vam.evam_hops(vam.eh)=%d\n", p_cms_param->vam.evam_hops);
-    rt_kprintf("vam.evam_broadcast_type(vam.ebt)=%d\n", p_cms_param->vam.evam_broadcast_type);
-    rt_kprintf("vam.evam_broadcast_peroid(vam.ebp)=%d (ms)\n\n", p_cms_param->vam.evam_broadcast_peroid);
+    rt_kprintf("vam.evam_hops(7)=%d\n", p_cms_param->vam.evam_hops);
+    rt_kprintf("vam.evam_broadcast_type(8)=%d\n", p_cms_param->vam.evam_broadcast_type);
+    rt_kprintf("vam.evam_broadcast_peroid(9)=%d (ms)\n\n", p_cms_param->vam.evam_broadcast_peroid);
 
-    rt_kprintf("vsa.danger_detect_speed_threshold(vsa.ddst)=%d (km/h)\n", p_cms_param->vsa.danger_detect_speed_threshold);
-    rt_kprintf("vsa.danger_alert_period(vsa.dap)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);
-	rt_kprintf("vsa.crd_saftyfactor(vsa.cs)=%d\n", p_cms_param->vsa.crd_saftyfactor);
-    rt_kprintf("vsa.ebd_mode(vsa.em)=%d\n", p_cms_param->vsa.ebd_mode);
-    rt_kprintf("vsa.ebd_acceleration_threshold(vsa.eat)=%d (m/s2)\n", p_cms_param->vsa.ebd_acceleration_threshold);
-    rt_kprintf("vsa.ebd_alert_hold_time(vsa.eaht)=%d (s)\n", p_cms_param->vsa.ebd_alert_hold_time);
+    rt_kprintf("vsa.danger_detect_speed_threshold(10)=%d (km/h)\n", p_cms_param->vsa.danger_detect_speed_threshold);
+    rt_kprintf("vsa.danger_alert_period(11)=%d (ms)\n", p_cms_param->vsa.danger_alert_period);
+	rt_kprintf("vsa.crd_saftyfactor(12)=%d\n", p_cms_param->vsa.crd_saftyfactor);
+    rt_kprintf("vsa.ebd_mode(13)=%d\n", p_cms_param->vsa.ebd_mode);
+    rt_kprintf("vsa.ebd_acceleration_threshold(14)=%d (m/s2)\n", p_cms_param->vsa.ebd_acceleration_threshold);
+    rt_kprintf("vsa.ebd_alert_hold_time(15)=%d (s)\n", p_cms_param->vsa.ebd_alert_hold_time);
 
     rt_kprintf("...\n");
 
@@ -245,7 +245,7 @@ int param_set(const char *param, uint16_t value)
 
 		}
 
-	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp"))
+	if(strcmp(param,"vam.bbp")&&strcmp(param,"vsa.dap")&&strcmp(param,"vam.ebp")&&strcmp(param,"id"))
 		if(value > 0xff)
 			{
 				//value = 0xff;
