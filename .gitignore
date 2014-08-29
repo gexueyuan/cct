@@ -76,4 +76,9 @@ $RECYCLE.BIN/
 *.dep
 *.sct
 ./prj_keil/*
+*.uvproj
+*.GXY
+*.Gexueyuan
+*.lnp
+
 
