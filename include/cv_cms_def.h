@@ -14,7 +14,7 @@
 
 #include "cv_vam.h"
 #include "cv_vsa.h"
-
+#include "gsensor.h"
 
 /*****************************************************************************
  * declaration of variables and functions                                    *
@@ -61,6 +61,7 @@ enum SYSTEM_MSG_TYPE{
     SYS_MSG_ALARM_ACTIVE,
     SYS_MSG_ALARM_CANCEL,
     SYS_MSG_GPS_UPDATE,
+    SYS_MSG_BSM_UPDATE,
     SYS_MSG_HI_IN_UPDATE,
     SYS_MSG_HI_OUT_UPDATE,
     SYS_MSG_XXX,
@@ -85,7 +86,9 @@ enum SYSTEM_MSG_TYPE{
 
 enum HI_OUT_TYPE{
     HI_OUT_NONE = 0,
-	HI_OUT_SYS_INIT,
+    HI_OUT_SYS_INIT,
+    HI_OUT_BSM_UPDATE,
+    HI_OUT_BSM_NONE,
     HI_OUT_GPS_CAPTURED,
     HI_OUT_GPS_LOST,
     HI_OUT_CRD_ALERT,
@@ -139,6 +142,8 @@ typedef struct _cfg_param{
     /******************** VSA *********************/
     vsa_config_t vsa;
 
+	/**************************************************/
+	gsnr_param_t gsnr;
     /******************** DBG *********************/
     uint8_t print_xxx;  /* 0 - disable, 1 - enable */
 
@@ -168,7 +173,7 @@ typedef struct _sys_envar{
     uint16_t led_blink_duration;
     uint16_t led_blink_period;
     uint16_t led_blink_cnt;
-
+	uint8_t voc_flag;
 
     /* os related */
     rt_thread_t task_sys_mng;
@@ -179,7 +184,7 @@ typedef struct _sys_envar{
 
     rt_timer_t timer_hi;
     rt_timer_t timer_voc;
-	rt_timer_t timer_gps;
+	//rt_timer_t timer_gps;
     
 }sys_envar_t;
 

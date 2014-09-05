@@ -45,8 +45,15 @@ void vsa_peer_status_update(void *parameter)
     vam_stastatus_t *p_sta = (vam_stastatus_t *)parameter;
     vsa_envar_t *p_vsa = &p_cms_envar->vsa;
 
-    memcpy(&p_vsa->remote, p_sta, sizeof(vam_stastatus_t));
-    vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
+	if(p_sta)
+		{
+    		memcpy(&p_vsa->remote, p_sta, sizeof(vam_stastatus_t));
+    		vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
+			if(!(p_cms_envar->sys.led_priority&(1<<SYS_MSG_BSM_UPDATE)))
+			sys_add_event_queue(&p_cms_envar->sys,SYS_MSG_BSM_UPDATE, 0, HI_OUT_BSM_UPDATE, NULL);
+		}
+	else
+			sys_add_event_queue(&p_cms_envar->sys,SYS_MSG_BSM_UPDATE, 0, HI_OUT_BSM_NONE, NULL);
 }
 
 void vsa_gps_status_update(void *parameter)
@@ -105,7 +112,7 @@ static int crd_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-    if (p_vsa->local.speed <= p_vsa->remote.speed){
+    if (p_vsa->local.speed <= (p_vsa->remote.speed + p_vsa->working_param.crd_oppsite_speed)){
 		
         return 0;
     }
@@ -139,15 +146,18 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
 
     /* put the beginning only in order to output debug infomations */
     dis_actual = vam_get_peer_relative_pos(p_vsa->remote.pid,0);
-    dis_alert = (int32_t)((p_vsa->remote.speed*2.0f - p_vsa->local.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
+    dis_alert = p_vsa->working_param.crd_rear_distance;//(int32_t)((p_vsa->remote.speed*2.0f - p_vsa->local.speed)*p_vsa->working_param.crd_saftyfactor*1000.0f/3600.0f);
     /* end */
 
-    if (p_vsa->remote.speed <= p_vsa->working_param.danger_detect_speed_threshold){
+    if (p_vsa->remote.speed < p_vsa->working_param.danger_detect_speed_threshold){
 		
         return 0;
     }
 
-    if (p_vsa->local.speed >= p_vsa->remote.speed){
+	if (p_vsa->local.speed < p_vsa->working_param.danger_detect_speed_threshold)
+		return 0;
+	
+    if ((p_vsa->local.speed + p_vsa->working_param.crd_oppsite_rear_speed) >= p_vsa->remote.speed){
 		
         return 0;
     }
@@ -169,8 +179,8 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-	if(vsm_get_rear_dir(&p_vsa->remote) * dis_actual < 0)
-		return 0;
+	//if(vsm_get_rear_dir(&p_vsa->remote) * dis_actual < 0)
+	//	return 0;
 	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
 
 	rt_kprintf("Rear end danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
@@ -221,12 +231,16 @@ static int crd_proc(vsa_envar_t *p_vsa, void *arg)
 	rt_bool_t  crd_flag,crd_rear_flag;
     
     switch(p_msg->id){
-        case VSA_MSG_LOCAL_UPDATE:
+       // case VSA_MSG_LOCAL_UPDATE:
 			//rt_kprintf("update information in crd \n\n");
 			//vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
-			crd_local_judge(p_vsa);
-            err = 0;
-            break;
+			//if ((p_vsa->alert_pend & (1<<VSA_ID_CRD))||(p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))){
+			//	}
+			//
+			//else
+			//crd_local_judge(p_vsa);
+           // err = 0;
+          //  break;
             
         case VSA_MSG_PEER_UPDATE:
 
@@ -418,6 +432,7 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
 				sys_add_event_queue(&p_cms_envar->sys, \
                                             SYS_MSG_ALARM_ACTIVE, 0, VSA_ID_EBD, NULL);
 				}
+			err = 0;
 			break;
 		case VSA_MSG_ALARM_UPDATE:
 			if((peer_alert&VAM_ALERT_MASK_EBD)&&(ebd_judge(p_vsa)>0))
@@ -439,6 +454,7 @@ static int ebd_proc(vsa_envar_t *p_vsa, void *arg)
                         sys_add_event_queue(&p_cms_envar->sys, \
                                             SYS_MSG_STOP_ALERT, 0, VSA_ID_EBD, NULL);
                     }
+			err = 0;	
 				break;
 					
 		default:
@@ -500,6 +516,7 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 							}
 						keycnt = ~keycnt;
 					}
+				err = 0;
 			   break;
 		
 		  case VSA_MSG_ALARM_UPDATE:
@@ -522,6 +539,7 @@ static int vbd_proc(vsa_envar_t *p_vsa, void *arg)
 						  sys_add_event_queue(&p_cms_envar->sys, \
 											  SYS_MSG_STOP_ALERT, 0, VSA_ID_VBD, NULL);
 					  }
+				err = 0;
 				break;  
 		  default:
 			  break;

@@ -34,33 +34,35 @@
 
 static gsnr_log_level_t gsnr_log_lvl = GSNR_NOTICE;
 
-GSENSOR_INFO g_info ;
-GSENSOR_INFO g_hori_info ; //三轴加速度在水平面的分量
-GSENSOR_INFO gSensor_Average, Acce_Sum, Acce_V, gSensor_Static, Acce_Ahead, Acce_H, Acce_K;
+GSENSOR_INFO g_info, Acce_Sum, Acce_V, gSensor_Static, Acce_Ahead, Acce_K;
+uint8_t drv_init = 0;
+uint8_t drivint_step = 0;	//为1时表示已计算出静态时xyz三轴的加速度, 2已确定车头方向 
 
-__IO static uint8_t init_flag = 0;
-uint8_t drivint_step = 0 ;
 int32_t s_cnt = 0;
 int32_t rd_cnt = 0 ;
-uint8_t ahead_flag = 0 ;
 
-float STATIC_ACC_THR = 0.3;  //obd use 0.2
+float   STATIC_ACC_THR          =   0.4;  //obd: 0.2    可用shell命令param_set(20, 4)设置
 float	SHARP_RIGHT_THRESOLD    =	5.5;
 uint8_t	SHARP_RIGHT_CNT			= 	6;
 float	SHARP_LEFT_THRESOLD		=	-5.5;
 uint8_t	SHARP_LEFT_CNT			= 	6;
-float	SHARP_SLOWDOWN_THRESOLD	=   -5.5; //obd use: -5.5
-uint8_t	SHARP_SLOWDOWN_CNT		=	3;
+float	SHARP_SLOWDOWN_THRESOLD	=   -5.5; //obd: -5.5  可用shell命令param_set(21, -55)设置
+uint8_t	SHARP_SLOWDOWN_CNT		=	2;    //obd: 3     可用shell命令param_set(22, 2)设置
 float	SHARP_SPEEDUP_THRESOLD	=	1.8;
-uint8_t	SHARP_SPEEDUP_CNT		=	6;        //obd use 6
+uint8_t	SHARP_SPEEDUP_CNT		=	6;
 
-int32_t	AHEAD_CNT				=	30;
-uint8_t	STATIC_GSENSOR_CNT		=	30;
-float	AHEAD_SPEED_THRESOD		=	10.0;
-float   VEHICLE_ACCLE_VALE = 0.1 ;
-float   VEHICLE_ANGLE	= 5.0 ;
+int32_t	AHEAD_CNT				=	20;  //obd: 30
+uint8_t	STATIC_GSENSOR_CNT		=	20;  //obd: 30
+float	AHEAD_SPEED_THRESOD		=	15.0; //odb: 10.0
+float   VEHICLE_ACCLE_VALE      =   0.1 ;
+float   VEHICLE_ANGLE	        =   5.0 ;
 
-uint8_t AdjustGsensor = 0;	//为1时表示已计算出静态时xyz三轴的加速度, 2已确定车头方向 
+
+extern int8_t  gsnr_param_set(uint8_t gsnr_cal_step, int32_t AcceV_x, int32_t AcceV_y, int32_t AcceV_z,
+                                 int32_t AcceAhead_x, int32_t AcceAhead_y, int32_t AcceAhead_z);
+
+extern const unsigned char bibi_behind_16k_8bits[];
+extern void voc_play(uint32_t sample_rate, uint8_t *p_data, uint32_t length);
 
 static void printAcc(gsnr_log_level_t level, char *des, float x, float y, float z)
 {
@@ -242,7 +244,6 @@ void GsensorReadAcc(float* pfData)
     for(i=0; i<6; i++)
     {
         BMA250E_Read(&buffer[i], BMA250E_OUT_X_L_ADDR+i, 1);
-        //GSNR_LOG(GSNR_DEBUG, "%02x, ", buffer[i]);
     }
     
     for(i=0; i<3; i++)
@@ -250,8 +251,8 @@ void GsensorReadAcc(float* pfData)
         temp = (((uint16_t)buffer[2*i+1] << 2) & 1020) | ((buffer[2*i]>>6) & 3);
     	if((temp>>9) == 1)
     	{
-            /* 0.038318 = 2 / 2^9 * 9.80665  */
-    		pfData[i] = (0.0 - (511-(temp&511)))*0.038307;  //m/s2
+            /* 0.038344 = 3.91/1000 * 9.80665  */
+    		pfData[i] = (0.0 - (511-(temp&511)))*0.038344;  //m/s2
     	}
     	else
     	{
@@ -374,7 +375,7 @@ int32_t GetStaticVal(GSENSOR_INFO gsensor_dat)
 		gSensor_Static.z += gsensor_dat.z;
 		if((fabs(last_static_x-gsensor_dat.x)>STATIC_ACC_THR) || 
             (fabs(last_static_y-gsensor_dat.y)>STATIC_ACC_THR) ||  
-            (fabs(last_static_z-gsensor_dat.z)>STATIC_ACC_THR))
+            (fabs(last_static_z-gsensor_dat.z)>3*STATIC_ACC_THR)) //发动机点火后z轴震动过大, 放宽门限
 		{
       		printAcc(GSNR_NOTICE, "停车态加速度波动过大xyz\r\n", fabs(last_static_x-gsensor_dat.x), 
                 fabs(last_static_y-gsensor_dat.y), 
@@ -406,7 +407,7 @@ int32_t GetStaticVal(GSENSOR_INFO gsensor_dat)
 	}
 
 
-	if(s_cnt == STATIC_GSENSOR_CNT)			//静态时读取30次三轴加速度值
+	if(s_cnt == STATIC_GSENSOR_CNT)			//静态时读取STATIC_GSENSOR_CNT次三轴加速度值
 	{
 		gSensor_Static.x /= STATIC_GSENSOR_CNT;
 		gSensor_Static.y /= STATIC_GSENSOR_CNT;
@@ -419,9 +420,9 @@ int32_t GetStaticVal(GSENSOR_INFO gsensor_dat)
 		Acce_V.z = gSensor_Static.z / gSensor_Static.sum;
 		/******************************************************/
 
-		AdjustGsensor = 1;	  //已确定重力加速度方向
 		s_cnt = 0;
-		printAcc(GSNR_NOTICE, "已确定重力加速度方向gSensor_Static xyz", gSensor_Static.x, gSensor_Static.y, gSensor_Static.z);
+		printAcc(GSNR_NOTICE, "已确定重力加速度方向: gSensor_Static", gSensor_Static.x, gSensor_Static.y, gSensor_Static.z);
+		printAcc(GSNR_NOTICE, "垂直方向上的单位向量: Acce_V", Acce_V.x, Acce_V.y, Acce_V.z);
 
 		return 1 ;
 	}
@@ -446,8 +447,7 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 		(G_Action.vehicle_accel_value > VEHICLE_ACCLE_VALE) && 
 		(G_Action.diff_angle < VEHICLE_ANGLE) &&
 		(G_Action.is_locate == __TRUE) &&
-		(p_vam_envar->working_param.bsm_hops != 1)) //bsm_hops参数未用, 此处暂用于test
-
+		p_vam_envar->working_param.bsm_hops != 0)
 	{
 		Acce_Sum.x += gsensor_dat.x;
 		Acce_Sum.y += gsensor_dat.y;
@@ -457,11 +457,11 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 		printAcc(GSNR_DEBUG, "RecDirection", Acce_Sum.x,Acce_Sum.y,Acce_Sum.z);
 		rd_cnt++;
 	}
-	else if ((rd_cnt == AHEAD_CNT) || (p_vam_envar->working_param.bsm_hops == 1))
+	else if ((rd_cnt == AHEAD_CNT) || (p_vam_envar->working_param.bsm_hops == 0))
 	{
-        if(p_vam_envar->working_param.bsm_hops == 1)
+        if(p_vam_envar->working_param.bsm_hops == 0)
         {
-            Acce_Sum.x = -60; //电源口方向为+x, 此处设为-， 当成车尾
+            Acce_Sum.x = 60; //电源口方向为+x, 车加速gsensor为+x， 当成车尾
             Acce_Sum.y = 1;
             Acce_Sum.z = 300;
         }
@@ -502,10 +502,8 @@ int32_t RecDirection(GSENSOR_INFO gsensor_dat)
 		Acce_Sum.y = 0;
 		Acce_Sum.z = 0;
 		Acce_Sum.sum = 0;
-		AdjustGsensor = 2;	  //已确定车头方向
-		printAcc(GSNR_NOTICE, "得出车头方向的单位向量Acce_Ahead", Acce_Ahead.x, Acce_Ahead.y, Acce_Ahead.z);
-		printAcc(GSNR_NOTICE, "Acce_V", Acce_V.x, Acce_V.y, Acce_V.z);
-		printAcc(GSNR_NOTICE, "Acce_K", Acce_K.x, Acce_K.y, Acce_K.z);
+		printAcc(GSNR_NOTICE, "得出车头方向的单位向量: Acce_Ahead", Acce_Ahead.x, Acce_Ahead.y, Acce_Ahead.z);
+		printAcc(GSNR_NOTICE, "车辆左方向的单位向量: Acce_K", Acce_K.x, Acce_K.y, Acce_K.z);
 
 		return 1 ;
 	}
@@ -616,21 +614,82 @@ void AcceHandle(GSENSOR_INFO gsensor_data)
 }
 
 
+void GsensorDataSave(uint8_t stepflag, GSENSOR_INFO acceV, GSENSOR_INFO acceAhead)
+{
+	int32_t temp_x = 0, temp_y = 0, temp_z = 0;
+	int32_t temp1_x = 0, temp1_y = 0, temp1_z = 0;
+
+
+	temp_x = (int32_t)(acceV.x * 10000);
+	temp_y = (int32_t)(acceV.y * 10000);
+	temp_z = (int32_t)(acceV.z * 10000);
+
+	temp1_x = (int32_t)(acceAhead.x * 10000);
+	temp1_y = (int32_t)(acceAhead.y * 10000);
+	temp1_z = (int32_t)(acceAhead.z * 10000);
+
+	gsnr_param_set(stepflag, temp_x, temp_y, temp_z, temp1_x, temp1_y, temp1_z);
+}
+
+uint8_t GsensorDataRead(gsnr_param_t *p_gsnr)
+{
+	uint8_t flag = 0;
+   
+    flag = p_gsnr->gsnr_cal_step;
+
+    if(flag >= 1)
+    {
+        Acce_V.x = p_gsnr->AcceV_x / 10000.0f;
+        Acce_V.y = p_gsnr->AcceV_y / 10000.0f;
+    	Acce_V.z = p_gsnr->AcceV_z / 10000.0f;
+		printAcc(GSNR_NOTICE, "读取垂直方向的单位向量: Acce_V", Acce_V.x, Acce_V.y, Acce_V.z);
+    }
+
+    if(flag == 2)
+    {
+    	Acce_Ahead.x = p_gsnr->AcceAhead_x / 10000.0f;
+    	Acce_Ahead.y = p_gsnr->AcceAhead_y / 10000.0f;
+    	Acce_Ahead.z = p_gsnr->AcceAhead_z / 10000.0f;
+
+        /************车辆左方向的单位向量**************/
+        Acce_K = VectorCrossMul(Acce_Ahead, Acce_V);
+        /**********************************************/
+
+        voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, 6400);
+
+		printAcc(GSNR_NOTICE, "读取车头方向的单位向量: Acce_Ahead", Acce_Ahead.x, Acce_Ahead.y, Acce_Ahead.z);
+		printAcc(GSNR_NOTICE, "车辆左方向的单位向量: Acce_K", Acce_K.x, Acce_K.y, Acce_K.z);
+    }
+
+    
+	return flag;
+}
+
 static void rt_gsnr_thread_entry(void *parameter)
 {
 	float   pfData[3]={0};
     GsensorReadAcc(pfData);
 	while(1) {
         GsensorReadAcc(pfData);
-		if(AdjustGsensor == 0)
+		if(drivint_step == 0)
 		{
-	    	GetStaticVal(g_info); 
+	    	if(GetStaticVal(g_info) == 1)
+	    	{
+        		drivint_step = 1;	  //已确定重力加速度方向
+                GsensorDataSave(drivint_step, Acce_V, Acce_Ahead);
+	    	}
+            
 		}
-		else if(AdjustGsensor == 1)
+		else if(drivint_step == 1)
 		{
-			RecDirection(g_info);
+    		if(RecDirection(g_info) == 1)
+    		{
+                drivint_step = 2;	  //已确定车头方向
+                GsensorDataSave(drivint_step, Acce_V, Acce_Ahead);
+                voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, 6400);
+    		}
 		}
-		else if(AdjustGsensor == 2)
+		else if(drivint_step == 2)
 		{
 			AcceHandle(g_info);
 		}
@@ -638,35 +697,30 @@ static void rt_gsnr_thread_entry(void *parameter)
     } 
 }
 
-rt_err_t gsnr_stop()
+void gsnr_init()
 {
     rt_thread_t gsnr_thread;
-    gsnr_thread = rt_thread_find("t-gsnr");
-    if (gsnr_thread != RT_NULL) 
-        rt_thread_delete(gsnr_thread);
-
-    return RT_EOK;
-}
-
-void gsnr_read(uint8_t reg, uint8_t num)
-{
-    if(0 == init_flag)
+    if(!drv_init)
     {
         gsnr_drv_init();
-        init_flag = 1;
+        drv_init = 1;
     }
-    int i = 0;
-    uint8_t data;
-    for(i=0; i<num; i++)
-    {
-#ifdef GSENSOR_BMA250E
-        BMA250E_Read(&data, reg+i, 1);
-#endif
-#ifdef GSENSOR_LSM303DLHC
-        LSM303DLHC_Read(ACC_I2C_ADDRESS, reg+i, 1, &data);
-#endif
-        rt_kprintf("Reg:0x%02x Data:0x%02x\r\n", reg+i, data);
-    }
+
+    /* load gsnr param from flash */
+	gsnr_param_t *p_gsnr_param = NULL;		
+    p_gsnr_param = &p_cms_param->gsnr;
+
+    STATIC_ACC_THR = p_gsnr_param->gsnr_cal_thr/10.0f;
+    SHARP_SLOWDOWN_THRESOLD = p_gsnr_param->gsnr_ebd_thr/10.0f;
+    SHARP_SLOWDOWN_CNT = p_gsnr_param->gsnr_ebd_cnt;
+
+    drivint_step = GsensorDataRead(p_gsnr_param);
+        
+    gsnr_thread = rt_thread_create("t-gsnr",
+                                    rt_gsnr_thread_entry, RT_NULL,
+                                    RT_MEMS_THREAD_STACK_SIZE, RT_MEMS_THREAD_PRIORITY, 20);
+    if (gsnr_thread != RT_NULL) 
+        rt_thread_startup(gsnr_thread);
 }
 
 
@@ -685,7 +739,7 @@ void EXTI1_IRQHandler(void)
 void EXTI2_IRQHandler(void)
 {
     /* disable interrupt */
-//    EXTI->IMR &= ~GPIO_Pin_2;
+    //EXTI->IMR &= ~GPIO_Pin_2;
 
     if(EXTI_GetITStatus(EXTI_Line2) == SET)
     {
@@ -695,27 +749,33 @@ void EXTI2_IRQHandler(void)
     GSNR_LOG(GSNR_DEBUG, "EXTI2_IRQHandler\r\n");
 }
 
-void gsnr_init()
+void gsnr_read(uint8_t reg, uint8_t num)
 {
-    rt_thread_t gsnr_thread;
-    if(!init_flag)
+    if(0 == drv_init)
     {
         gsnr_drv_init();
-        init_flag = 1;
+        drv_init = 1;
     }
-    gsnr_thread = rt_thread_create("t-gsnr",
-                                    rt_gsnr_thread_entry, RT_NULL,
-                                    RT_MEMS_THREAD_STACK_SIZE, RT_MEMS_THREAD_PRIORITY, 20);
-    if (gsnr_thread != RT_NULL) 
-        rt_thread_startup(gsnr_thread);
+    int i = 0;
+    uint8_t data;
+    for(i=0; i<num; i++)
+    {
+#ifdef GSENSOR_BMA250E
+        BMA250E_Read(&data, reg+i, 1);
+#endif
+#ifdef GSENSOR_LSM303DLHC
+        LSM303DLHC_Read(ACC_I2C_ADDRESS, reg+i, 1, &data);
+#endif
+        rt_kprintf("Reg:0x%02x Data:0x%02x\r\n", reg+i, data);
+    }
 }
 
 
+/* shell cmd for debug */
 #ifdef RT_USING_FINSH
 #include <finsh.h>
-FINSH_FUNCTION_EXPORT(gsnr_init, start test gsnr) ;
-FINSH_FUNCTION_EXPORT(gsnr_stop, stop gsnr) ;
-FINSH_FUNCTION_EXPORT(gsnr_read, read gsnr reg) ;
-FINSH_FUNCTION_EXPORT(gsnr_write, write gsnr reg) ;
+
+//FINSH_FUNCTION_EXPORT(gsnr_read, read gsnr reg) ;
+//FINSH_FUNCTION_EXPORT(gsnr_write, write gsnr reg) ;
 #endif
 

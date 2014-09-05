@@ -458,6 +458,7 @@ void pal_led_init(void)
  */
 void pal_led(led_id_t led_no, led_action_t led_setting)
 {
+#if 0
     uint32_t led_pin;
     uint32_t pin_status;
     GPIO_TypeDef *pio_select;
@@ -521,6 +522,7 @@ void pal_led(led_id_t led_no, led_action_t led_setting)
     {
         return;
     }
+#endif	
 }
 
 

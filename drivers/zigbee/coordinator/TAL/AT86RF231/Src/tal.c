@@ -49,6 +49,7 @@
 #include "mac_api.h"
 #include "Uz2400D.h"
 #include "main1.h"
+#include <rtthread.h>
 /* === TYPES =============================================================== */
 extern uint32_t ledTxCounter,ledRxCounter;
 
@@ -259,6 +260,7 @@ void tal_task(void)
                 bmm_buffer_init();
                	tal_rx_buffer = bmm_buffer_alloc(LARGE_BUFFER_SIZE);
                 Times = 0;
+							rt_kprintf("zigbee queue full error\n");
             }
         }
     }

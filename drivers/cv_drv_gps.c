@@ -179,11 +179,13 @@ static void gps_read_data(rt_device_t dev)
 
                 if((0 == cfg_flag) && (0 == memcmp(__GPSBuff.PpBuf[__GPSBuff.Pipe].Buf, "$GPTXT", 6)))
                 {
-                    /* got ublox GPTXT msg. config gps baud to 115200 */
+                    /* got ublox GPTXT msg. config needed nmea */
                     gps_cfg_msg();
-                    rt_thread_delay(1);									
+                    rt_thread_delay(1);	
+                    /* conifg ublox gps rate 5Hz */
 					gps_cfg_rate(5);
 					rt_thread_delay(1);
+                    /* config gps baud to 115200 */
                     gps_cfg_prt();
                     rt_thread_delay(1);
                     gps_set_host_baudrate(BAUD_RATE_115200);
@@ -268,7 +270,9 @@ void gps_deinit(void)
 	gps_recv_cb = NULL;	
 }
 
-FINSH_FUNCTION_EXPORT(gps_cfg_rate, debug: set gps rate);
+/* shell cmd for debug */
+//FINSH_FUNCTION_EXPORT(gps_cfg_rate, debug: set gps rate);
+
 //==============================================================================
 //                                   0ooo
 //                          ooo0     (   ) 

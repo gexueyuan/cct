@@ -609,7 +609,7 @@ void nlde_data_request (uint8_t *msg)
 		{
 			timer_status =
 				pal_timer_start(gNwkPassiveAckTable.table[index].timerID,
-								(cms_param.vam.evam_hops*cms_param.vsa.danger_alert_period*2000),//网络层ack最小延时500ms
+								(transmit_frame->NwkFrameHeader->radius*cms_param.vsa.danger_alert_period*1000),//网络层ack最小延时500ms
 								TIMEOUT_RELATIVE,
 	#ifndef VANET
 								(FUNC_PTR)bc_data_cb,

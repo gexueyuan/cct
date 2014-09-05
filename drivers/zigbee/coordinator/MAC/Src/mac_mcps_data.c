@@ -684,29 +684,32 @@ void mac_process_data_frame(buffer_t *buf_ptr)
             else if (gNwkFrameHeader_p->dstAddr >= BROADCAST_ADDR_ROUTERS && gNwkFrameHeader_p->frameControl.frameType == NWK_FRAMETYPE_DATA)
             {
 #ifdef _NWK_PASSIVE_ACK_
-            	uint8_t index = nwkFindPassiveAck(gNwkFrameHeader_p->srcAddr, gNwkFrameHeader_p->sequenceNumber);
-            	if (index == 0xFF)
-            	{
+							
+#if 1								
 								if (blackListEnable == 1)
 								{
-									if (find_black_list(gNwkFrameHeader_p->srcAddr) != -1)
+									if (find_black_list(mdi->SrcAddr) != -1)
 									{
 										bmm_buffer_free(buf_ptr);
                     mac_sleep_trans();
                     return;										
 									}
 								}
-								
-								if (whiteListEnable == 1)
+								else if (whiteListEnable == 1)
 								{
-									if (find_white_list(gNwkFrameHeader_p->srcAddr) == -1)
+									if (find_white_list(mdi->SrcAddr) == -1)
 									{
 										bmm_buffer_free(buf_ptr);
                     mac_sleep_trans();
                     return;											
 									}
 								}			
-								
+#endif								
+							
+            	uint8_t index = nwkFindPassiveAck(gNwkFrameHeader_p->srcAddr, gNwkFrameHeader_p->sequenceNumber);
+            	if (index == 0xFF)
+            	{
+							
 								int32_t distance = (int32_t)vsm_get_relative_pos_immediate(&(p_cms_envar->vam.local),&(gNwkFrameHeader_p->field.payload[7]));			
 								
 								if (gNwkFrameHeader_p->radius > 1 && distance >0)  
@@ -722,12 +725,7 @@ void mac_process_data_frame(buffer_t *buf_ptr)
 														false,
 														APP_ROUTE_BROADCAST);
 								}
-//								else
-//								{
-//										bmm_buffer_free(buf_ptr);
-//                    mac_sleep_trans();
-//                    return;
-//								}
+
             	}
             	else
 				{

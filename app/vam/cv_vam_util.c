@@ -196,7 +196,8 @@ const char *_directfromangle(int angle)
     return dir[i];
 }
 
-extern int zigbeeDistance;
+extern uint16_t zigbeeDistance;
+extern uint16_t zigbeeDelta;
 double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
 {
     double lat1, lng1, lat2, lng2, lat3, lng3;
@@ -235,7 +236,7 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
     lat3 = lat1;
     lng3 = lng2;
 
-    zigbeeDistance = distance_1_2 = getDistanceVer2(lat1, lng1, lat2, lng2);
+    distance_1_2 = getDistanceVer2(lat1, lng1, lat2, lng2);
     distance_2_3 = getDistanceVer2(lat2, lng2, lat3, lng3);
     angle = acos(distance_2_3/distance_1_2)*180/PI;
 
@@ -272,8 +273,9 @@ double vsm_get_relative_pos_immediate(vam_stastatus_t *p_src, uint8_t *payload)
     if (delta > 180){
         delta = 360 - delta;
     }
-
-    distance_1_2 *= 1000; /* convert from Km to m */
+		
+		zigbeeDelta = delta;
+    zigbeeDistance = distance_1_2 *= 1000; /* convert from Km to m */
 
     return (delta <= 45)? distance_1_2:(-distance_1_2);
 }

@@ -49,7 +49,7 @@ typedef enum _Relationship_t
 typedef uint16_t NwkLifeTime_t;
 /** The bit map of passive acks, each bit is matched to a broadcast that
  * waits passive acknowledgements. */
-typedef uint8_t NwkPassiveAckMap_t;
+typedef uint32_t NwkPassiveAckMap_t;
 
 /** Mutable fields of a entry in the neighbor table. */
 typedef struct _NwkMutablePartOfNeighbor_t

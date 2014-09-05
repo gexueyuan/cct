@@ -921,7 +921,7 @@ retval_t pal_sio_init(uint8_t sio_unit);
 
 uint8_t pal_sio_tx(uint8_t sio_unit, uint8_t *data, uint8_t length);
 #endif
-uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length);
+uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint16_t prevHopAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length);
 /**
  * @brief Receives data from selected SIO unit
  *

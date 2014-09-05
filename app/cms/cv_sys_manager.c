@@ -24,7 +24,7 @@
 
 #define HUMAN_ITERFACE_DEFAULT         SECOND_TO_TICK(1)
 
-#define HUMAN_ITERFACE_VOC         	   SECOND_TO_TICK(3)
+#define HUMAN_ITERFACE_VOC         	   SECOND_TO_TICK(2)
 
 #define HUMAN_ITERFACE_GPS_VOC         SECOND_TO_TICK(5)
 
@@ -32,15 +32,22 @@
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
-extern const unsigned char notice_16k_8bits[];
-extern const unsigned char voice_16k_8bits[];
-extern const unsigned int notice_16k_8bitsLen;
-extern const unsigned int voice_16k_8bitsLen;
+extern const unsigned char bibi_front_16k_8bits[];
+extern const unsigned char bibi_behind_16k_8bits[];
+extern const unsigned char bibi_breakdown_16k_8bits[];
+extern const unsigned char bibi_brake_16k_8bits[];
+
+extern const unsigned int bibi_front_16k_8bitsLen;
+extern const unsigned int bibi_behind_16k_8bitsLen;
+extern const unsigned int bibi_breakdown_16k_8bitsLen;
+extern const unsigned int bibi_brake_16k_8bitsLen;
+
 extern void voc_play(uint32_t sample_rate, uint8_t *p_data, uint32_t length);
 extern void led_on(led_color_t led);
 extern void led_off(led_color_t led);
 extern void led_blink(led_color_t led);
 
+extern int param_set(uint8_t param, int32_t value);
 //extern void Delay(volatile uint32_t nCount);
 /*****************************************************************************
  * implementation of functions                                               *
@@ -114,8 +121,20 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_SYS_INIT, 0);
 
             break;
+		case SYS_MSG_BSM_UPDATE:
+			hi_add_event_queue(p_sys, SYS_MSG_HI_OUT_UPDATE,0,p_msg->argc, 0);			
+			break;
+			
 		case SYS_MSG_KEY_PRESSED:
+			if(p_msg->argc == C_UP_KEY)
 			vsa_add_event_queue(p_vsa, VSA_MSG_KEY_UPDATE, 0,p_msg->argc,NULL);
+			else if(p_msg->argc == C_DOWN_KEY)
+				{
+					rt_kprintf("gsnr param is resetting .....\n");
+					param_set(19,0);
+					//rt_kprintf("restart......\n\n");
+					//NVIC_SystemReset();
+			}
 			break;
         case SYS_MSG_START_ALERT:
             rt_kprintf("%s:alert start!!!.\n", __FUNCTION__);
@@ -220,28 +239,8 @@ void timer_human_interface_callback(void* parameter)
 {
     sys_envar_t *p_sys = (sys_envar_t *)parameter;
     
-#if 0    /* for debug only */
-    rt_err_t err = RT_ENOMEM;
-    sys_msg_t msg = {0,0,0,0};
 
-
-    p_sys->hi_timer_cnt++;
-
-    if (p_sys->hi_timer_cnt%5 == 0){
-        msg.id = SYS_MSG_START_ALERT;
-        msg.argc = VSA_ID_VBD;
-    }
-
-    if (msg.id != 0){
-        err = rt_mq_send(p_sys->queue_sys_hi, &msg, sizeof(sys_msg_t));
-
-        if (err != RT_EOK){
-            rt_kprintf("%s: failed=[%d], msg=%04x\n", __FUNCTION__, err, msg.id);
-        }
-    }
-#else
-    p_sys = p_sys;
-#endif
+    p_sys->voc_flag = 0;
 }
 
 void timer_out_vsa_process(void* parameter)
@@ -253,51 +252,81 @@ void timer_out_vsa_process(void* parameter)
 	vsa_envar_t* p_vsa  = (vsa_envar_t*)parameter;
 
 	if(p_vsa->alert_pend & (1<<VSA_ID_EBD))	
-		voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);// 3 notice + vioce,EBD最优先,同时报警选择EBD,VBD次之
-
+		{	
+			voc_play(16000, (uint8_t *)bibi_brake_16k_8bits, bibi_brake_16k_8bitsLen);// vioce,EBD最优先,同时报警选择EBD,VBD次之
+		}
 	else if(p_vsa->alert_pend & (1<<VSA_ID_VBD))
-		voc_play(16000, (uint8_t *)voice_16k_8bits+3200, voice_16k_8bitsLen-3200);// 2 notice + vioce
-
+		{	
+			timevalue = SECOND_TO_TICK(3);
+			voc_play(16000, (uint8_t *)bibi_breakdown_16k_8bits, bibi_breakdown_16k_8bitsLen);// 
+		}
 	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD))	
-		voc_play(16000, (uint8_t *)voice_16k_8bits+6400, voice_16k_8bitsLen-6400);// 1 notice + vioce
+		voc_play(16000, (uint8_t *)bibi_front_16k_8bits, bibi_front_16k_8bitsLen);// 
 	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))	
-		voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);// 1 notice + vioce
+		voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, bibi_behind_16k_8bitsLen);// 
 
 	rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
 }
 
-void timer_gps_hi(void* parameter)
-{	
-	voc_play(16000, (uint8_t *)notice_16k_8bits, 6400);
-}
-
 void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 {
-    if (p_msg->id == SYS_MSG_HI_OUT_UPDATE){
+
+	int  timevalue = 1;
+	if (p_msg->id == SYS_MSG_HI_OUT_UPDATE){
         switch(p_msg->argc){
 			case HI_OUT_SYS_INIT:
-				voc_play(16000, (uint8_t *)notice_16k_8bits, 3200);
+				p_sys->led_priority |= 1<<HI_OUT_GPS_LOST;
+				voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, 3200);
 				break;
+
+			case HI_OUT_BSM_UPDATE:
+					p_sys->led_priority |= 1<<SYS_MSG_BSM_UPDATE;
+				break;
+			case HI_OUT_BSM_NONE:
+					p_sys->led_priority &= ~(1<<SYS_MSG_BSM_UPDATE);
+				break;				
 				
             case HI_OUT_CRD_ALERT:
-               // voc_play(16000, (uint8_t *)notice_16k_8bits, notice_16k_8bitsLen);
-                rt_timer_start(p_cms_envar->sys.timer_voc);
-             	p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
-                break;
+				if(!p_sys->voc_flag)
+					{
+                		voc_play(16000, (uint8_t *)bibi_front_16k_8bits, bibi_front_16k_8bitsLen);
+						p_sys->voc_flag = 0xff;
+					}
+                rt_timer_start(p_cms_envar->sys.timer_hi);
+				if(p_sys->led_priority&(1<<HI_OUT_CRD_ALERT))
+					return;
+				else
+					{
+             			p_sys->led_priority |= 1<<HI_OUT_CRD_ALERT;
+						//p_sys->led_priority &= ~(1<<HI_OUT_SYS_BSM);
+					}
+				break;
 
 			case HI_OUT_CRD_REAR_ALERT:
-                rt_timer_start(p_cms_envar->sys.timer_voc);
-             	p_sys->led_priority |= 1<<HI_OUT_CRD_REAR_ALERT;
+                if(!p_sys->voc_flag)
+					{
+                		voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, bibi_behind_16k_8bitsLen);
+						p_sys->voc_flag = 0xff;
+					}
+                rt_timer_start(p_cms_envar->sys.timer_hi);
+				if(p_sys->led_priority&(1<<HI_OUT_CRD_REAR_ALERT))
+					return;
+				else
+					{
+             			p_sys->led_priority |= 1<<HI_OUT_CRD_REAR_ALERT;
+						//p_sys->led_priority &= ~(1<<HI_OUT_SYS_BSM);
+					}	
 				break;
 				
             case HI_OUT_VBD_ALERT:
-               // voc_play(16000, (uint8_t *)voice_16k_8bits, voice_16k_8bitsLen);
                 rt_timer_start(p_cms_envar->sys.timer_voc);
-               // p_sys->led_blink_duration[LED_RED] = 10;
-               // p_sys->led_blink_period[LED_RED] = 15;
-               // p_sys->led_blink_cnt[LED_RED] = 0;
-               // p_sys->led_blink_period[LED_GREEN] = 0; /* turn off gps led */
-			   p_sys->led_priority |= 1<<HI_OUT_VBD_ALERT;
+				if(p_sys->led_priority&(1<<HI_OUT_VBD_ALERT))
+					return;
+				else
+					{
+			   			p_sys->led_priority |= 1<<HI_OUT_VBD_ALERT;
+						//p_sys->led_priority &= ~(1<<HI_OUT_SYS_BSM);
+					}	
                 break;				
 
 			case HI_OUT_EBD_ALERT:
@@ -307,29 +336,37 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 break;
 
 			case HI_OUT_CRD_CANCEL:
-				if(p_cms_envar->vsa.alert_pend == 0)
-					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				//if(p_cms_envar->vsa.alert_pend == 0)
+					//rt_timer_stop(p_cms_envar->sys.timer_voc);
 				p_sys->led_priority &= ~(1<<HI_OUT_CRD_ALERT);
 
 				break;
 
 			case HI_OUT_CRD_REAR_CANCEL:
-				if(p_cms_envar->vsa.alert_pend == 0)
-					rt_timer_stop(p_cms_envar->sys.timer_voc);
+				//if(p_cms_envar->vsa.alert_pend == 0)
+					//rt_timer_stop(p_cms_envar->sys.timer_voc);
 				p_sys->led_priority &= ~(1<<HI_OUT_CRD_REAR_ALERT);
 
 				break;	
 
 			case HI_OUT_VBD_CANCEL:
 				if(p_cms_envar->vsa.alert_pend == 0)
-					rt_timer_stop(p_cms_envar->sys.timer_voc);
+					{
+						rt_timer_stop(p_cms_envar->sys.timer_voc);
+						
+						rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
+					}	
 				p_sys->led_priority &= ~(1<<HI_OUT_VBD_ALERT);
 
 				break;
 
 			case HI_OUT_EBD_CANCEL:
 				if(p_cms_envar->vsa.alert_pend == 0)
-					rt_timer_stop(p_cms_envar->sys.timer_voc);
+					{
+						rt_timer_stop(p_cms_envar->sys.timer_voc);
+						
+						rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
+					}
 				p_sys->led_priority &= ~(1<<HI_OUT_EBD_ALERT);
 
 				break;
@@ -374,7 +411,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_period[LED_GREEN] = 20;
                 //p_sys->led_blink_cnt[LED_GREEN] = 0;
-                p_sys->led_priority &= ~(1<<HI_OUT_GPS_CAPTURED);
+                p_sys->led_priority |= 1<<HI_OUT_GPS_LOST;
                 break;
 
             case HI_OUT_GPS_CAPTURED:
@@ -382,7 +419,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
                 //p_sys->led_blink_duration[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_period[LED_GREEN] = 0xFFFF;
                 //p_sys->led_blink_cnt[LED_GREEN] = 0;
-                p_sys->led_priority |= 1<<HI_OUT_GPS_CAPTURED;
+                p_sys->led_priority &= ~(1<<HI_OUT_GPS_LOST);
                 break;
 
             default:
@@ -392,6 +429,8 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
     else if (p_msg->id == SYS_MSG_HI_IN_UPDATE){
 
     }
+	
+
 	if((p_sys->led_priority&(1<<HI_OUT_CRD_ALERT))||(p_sys->led_priority&(1<<HI_OUT_CRD_REAR_ALERT))\
 		||(p_sys->led_priority&(1<<HI_OUT_EBD_ALERT))||(p_sys->led_priority&(1<<HI_OUT_VBD_ALERT)))
 		{
@@ -411,21 +450,33 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             p_sys->led_blink_period = 15;
             p_sys->led_blink_cnt = 0;
 	}
-	else if(p_sys->led_priority&(1<<HI_OUT_GPS_CAPTURED))
+
+	else if(p_sys->led_priority&(1<<HI_OUT_GPS_LOST))
 		{
 			p_sys->led_color.r = 0;//r=1,b=0,g=1
 			p_sys->led_color.b = 0;
 			p_sys->led_color.g = 1;
 			p_sys->led_blink_duration= 0xFFFF;
-            p_sys->led_blink_period = 0xFFFF;
+            p_sys->led_blink_period = 25;
             p_sys->led_blink_cnt = 0;
 		}
+	else if(p_sys->led_priority&(1<<SYS_MSG_BSM_UPDATE))
+		{
+			p_sys->led_color.r = 0;//r=0,b=0,g=1
+			p_sys->led_color.b = 1;
+			p_sys->led_color.g = 0;
+			p_sys->led_blink_duration= 0xFFFF;
+			p_sys->led_blink_period = 25;
+			p_sys->led_blink_cnt = 0;
+			//p_sys->led_priority &= ~(1<<HI_OUT_SYS_BSM);
+
+	}
 	else {
 			p_sys->led_color.r = 0;//r=0,b=0,g=1
 			p_sys->led_color.b = 0;
 			p_sys->led_color.g = 1;
 			p_sys->led_blink_duration= 0xFFFF;
-			p_sys->led_blink_period = 25;
+			p_sys->led_blink_period = 0xFFFF;
 			p_sys->led_blink_cnt = 0;
 
 	}
@@ -439,8 +490,6 @@ void rt_hi_thread_entry(void *parameter)
     sys_msg_t msg, *p_msg = &msg;
     sys_envar_t *p_sys = (sys_envar_t *)parameter;
 	static uint8_t ledss = 0xff;
-	int16_t breath_led = 0;
-	uint8_t led_light_dark = 1;
 
     rt_kprintf("%s: ---->\n", __FUNCTION__);
 
@@ -451,7 +500,11 @@ void rt_hi_thread_entry(void *parameter)
         if (err == RT_EOK){
             sys_human_interface_proc(p_sys, p_msg);
         }
-
+/*
+		if(p_sys->led_priority&(1<<HI_OUT_SYS_BSM))
+		if(list_empty(&(p_cms_envar->vam.neighbour_list)))		
+		p_sys->led_priority &= ~(1<<HI_OUT_SYS_BSM);
+*/
         /* update led status */    
 
             if (p_sys->led_blink_period == 0){/* always off */
@@ -541,17 +594,18 @@ void sys_init(void)
     rt_thread_startup(p_sys->task_sys_hi);
 
     p_sys->timer_hi = rt_timer_create("tm-hi",timer_human_interface_callback,p_sys,\
-        HUMAN_ITERFACE_DEFAULT,RT_TIMER_FLAG_PERIODIC); 					
+        HUMAN_ITERFACE_VOC,RT_TIMER_FLAG_ONE_SHOT); 					
     RT_ASSERT(p_sys->timer_hi != RT_NULL);
 
     p_sys->timer_voc= rt_timer_create("tm-voc",timer_out_vsa_process,p_vsa,\
         1,RT_TIMER_FLAG_PERIODIC); 					
     RT_ASSERT(p_sys->timer_hi != RT_NULL);
 
-    p_sys->timer_gps= rt_timer_create("tm-gps",timer_gps_hi,NULL,\
-        HUMAN_ITERFACE_GPS_VOC,RT_TIMER_FLAG_ONE_SHOT); 					
-    RT_ASSERT(p_sys->timer_gps != RT_NULL);
-
+#if 0
+    p_sys->timer_crd= rt_timer_create("tm-crd",timer_out_crd_process,p_vsa,\
+        HUMAN_ITERFACE_VOC,RT_TIMER_FLAG_ONE_SHOT); 					
+    RT_ASSERT(p_sys->timer_crd != RT_NULL);
+#endif
     rt_kprintf("sysc module initial\n");
 }
 
@@ -559,16 +613,19 @@ void sys_init(void)
 /* below are for debug */
 void test_alert(void)
 {
-    hi_add_event_queue(&p_cms_envar->sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_VBD_ALERT, 0);
+   // hi_add_event_queue(&p_cms_envar->sys, SYS_MSG_HI_OUT_UPDATE,0,HI_OUT_VBD_ALERT, 0);
 
-	p_cms_envar->vsa.alert_pend |= VSA_ID_CRD;
+   p_cms_envar->vsa.alert_pend |= VSA_ID_VBD;
+
+   rt_timer_start(p_cms_envar->sys.timer_voc);
+	
 }
 FINSH_FUNCTION_EXPORT(test_alert, debug: testing alert voice and led);
 
 void start_voc( uint8_t  type)
 {
 
-     rt_timer_start(p_cms_envar->sys.timer_voc);
+    voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, bibi_behind_16k_8bitsLen);// 
 
 }
 	

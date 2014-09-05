@@ -272,7 +272,7 @@ label_3:
 #endif
             if (GET_USER_FRAME_MODE() == USER_MIBEE_FRAME_MODE)
             	pal_sio_tx(SIO_0, nsdu, nsduLength);
-            else pal_sio_tx_vanet(srcAddr, rssi, radius, AppFrameHeader->AppPayload, AppFrameHeader->length);
+            else pal_sio_tx_vanet(srcAddr, prevHopAddr, rssi, radius, AppFrameHeader->AppPayload, AppFrameHeader->length);
 
 			if (ledRxCounter == 0)
 			{

@@ -30,6 +30,7 @@
 #include "tal_internal.h"
 
 #include "nwk.h"
+#include "cv_cms_def.h"
 /* === TYPES =============================================================== */
 
 
@@ -91,7 +92,7 @@ void init_tal_pib(void)
     tal_pib.MinBE = TAL_MINBE_DEFAULT;
 //#ifdef NO_JOIN
     	  tal_pib.CurrentChannel       = App_System_Para_Pointer->AtCfgInfo.byRfChannelID + 11;
-		  tal_pib.ShortAddress       = App_System_Para_Pointer->AtCfgInfo.wNwkNodeID;
+		  tal_pib.ShortAddress       = p_cms_param->pid[3] | p_cms_param->pid[2]<<8;
 		  tal_pib.PANId                = App_System_Para_Pointer->AtCfgInfo.wMacPanID;
 #ifdef ATMEL_RF		  
 		  switch (App_System_Para_Pointer->AtCfgInfo.byRfSendPower)

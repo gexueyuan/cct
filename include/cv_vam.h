@@ -114,7 +114,7 @@ typedef struct _vam_config{
     uint8_t bsm_boardcast_mode;  /* 0 - disable, 1 - auto, 2 - fixed period */
     
     uint8_t bsm_boardcast_saftyfactor;  /* 1~10 */
-    uint8_t bsm_pause_mode;  /* 0 - disable, 1 - enable */
+    uint8_t bsm_pause_mode;  /* 0 - disable, 1-tx evam enable, 2-rx evam pause bsm*/
     uint8_t bsm_pause_hold_time;  /* unit:s */
     uint16_t bsm_boardcast_period;  /* 100~3000, unit:ms, min accuracy :10ms */
     /* 

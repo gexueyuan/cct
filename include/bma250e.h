@@ -24,9 +24,9 @@
  #include "stm32f4xx.h"
 
 
-#define BMA250E_Sensitivity_2g    (float)114.285f        /*!< gyroscope sensitivity with 250 dps full scale [LSB/dps]  */
-#define BMA250E_Sensitivity_4g    (float)57.1429f        /*!< gyroscope sensitivity with 500 dps full scale [LSB/dps]  */
-#define BMA250E_Sensitivity_8g   (float)14.285f         /*!< gyroscope sensitivity with 2000 dps full scale [LSB/dps] */
+#define BMA250E_Sensitivity_2g    (float)0.038344f        /* m/s2 */
+#define BMA250E_Sensitivity_4g    (float)0.076688f        
+#define BMA250E_Sensitivity_8g    (float)0.153376f         
 
 
 /* BMA250E struct */

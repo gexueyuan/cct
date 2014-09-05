@@ -89,29 +89,43 @@ uart_communication_buffer_t uart_0_buffer;
 
 bool blackListEnable = 0;
 bool whiteListEnable = 0;
-uint16_t blackTable[64];
-uint64_t blackBitMap = 0;
+uint16_t blackTable[32];
+uint32_t blackBitMap = 0;
 uint8_t blackListCount = 0;
 
-uint16_t whiteTable[64];
-uint64_t whiteBitMap = 0;
+uint16_t whiteTable[32];
+uint32_t whiteBitMap = 0;
 uint8_t whiteListCount = 0;
 bool isOUtNet = 1;
 uint8_t outDebug[20];
-int zigbeeDistance;
+uint16_t zigbeeDistance;
+uint16_t zigbeeDelta;
 
-int8_t add_black_list(uint16_t srcAddr)
+int8_t set_fire_state(uint16_t state)
 {
-	int8_t index = -1;
-	index = __CLZ(__RBIT(~blackBitMap));
-	if (index < 64)
+	if (state == 0)
 	{
-		blackBitMap |= 1 << index;
-		blackTable[index] = srcAddr;
-		blackListCount++;
+		blackListEnable = 0;
+		whiteListEnable = 0;
+		return 0;
 	}
-	return index;
+	else if (state == 1)
+	{
+		blackListEnable = 1;
+		whiteListEnable = 0;
+		return 1;
+	}
+	else if (state == 2)
+	{
+		whiteListEnable = 1;
+		blackListEnable = 0;
+		return 2;
+	}		
+	return -1;
 }
+FINSH_FUNCTION_EXPORT(set_fire_state, debug: set firewall default_state);
+
+
 
 int8_t find_black_list(uint16_t srcAddr)
 {
@@ -119,7 +133,7 @@ int8_t find_black_list(uint16_t srcAddr)
 
 	if (blackListCount > 0)
 	{
-		for(i=0; i<64; i++)
+		for(i=0; i<32; i++)
 		{
 				if (blackBitMap & (1<<i))
 				{
@@ -136,33 +150,40 @@ int8_t find_black_list(uint16_t srcAddr)
 	return -1;
 }
 
+int8_t add_black_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+	index = find_black_list(srcAddr);
+	if (index != -1)
+		return index;
+	index = __CLZ(__RBIT(~blackBitMap));
+	if (index < 32)
+	{
+		blackBitMap |= 1 << index;
+		blackTable[index] = srcAddr;
+		blackListCount++;
+	}
+	return index;
+}
+FINSH_FUNCTION_EXPORT(add_black_list, debug: add black list);
+
+
 int8_t del_black_list(uint16_t srcAddr)
 {
 	int8_t index = -1;
   index = find_black_list(srcAddr);
-	if (index != -1 && index < 64)
+	if (index != -1 && index < 32)
 	{
 		blackBitMap &= ~(1 << index);
-		blackTable[index] = 0XFFFF;
+		blackTable[index] = 0xFFFF;
 		blackListCount--;		
 	}
 		
 	return index;
 }
+FINSH_FUNCTION_EXPORT(del_black_list, debug: del black list);
 
 
-int8_t add_white_list(uint16_t srcAddr)
-{
-	int8_t index = -1;
-	index = __CLZ(__RBIT(~whiteBitMap));
-	if (index < 64)
-	{
-		whiteBitMap |= 1 << index;
-		whiteTable[index] = srcAddr;
-		whiteListCount++;
-	}
-	return index;
-}
 
 int8_t find_white_list(uint16_t srcAddr)
 {
@@ -170,7 +191,7 @@ int8_t find_white_list(uint16_t srcAddr)
 
 	if (whiteListCount > 0)
 	{
-		for(i=0; i<64; i++)
+		for(i=0; i<32; i++)
 		{
 				if (whiteBitMap & (1<<i))
 				{
@@ -187,20 +208,37 @@ int8_t find_white_list(uint16_t srcAddr)
 	return -1;
 }
 
+int8_t add_white_list(uint16_t srcAddr)
+{
+	int8_t index = -1;
+	index = find_white_list(srcAddr);
+	if (index != -1)
+		return index;	
+	index = __CLZ(__RBIT(~whiteBitMap));
+	if (index < 32)
+	{
+		whiteBitMap |= 1 << index;
+		whiteTable[index] = srcAddr;
+		whiteListCount++;
+	}
+	return index;
+}
+FINSH_FUNCTION_EXPORT(add_white_list, debug: add white list);
+
 int8_t del_white_list(uint16_t srcAddr)
 {
 	int8_t index = -1;
   index = find_white_list(srcAddr);
-	if (index != -1 && index < 64)
+	if (index != -1 && index < 32)
 	{
 		whiteBitMap &= ~(1 << index);
-		whiteTable[index] = 0XFFFF;
+		whiteTable[index] = 0xFFFF;
 		whiteListCount--;		
 	}
 		
 	return index;
 }
-
+FINSH_FUNCTION_EXPORT(del_white_list, debug: del white list);
 
 uint8_t pal_sio_init(uint8_t UARTx) 
 {
@@ -221,7 +259,9 @@ void out_net()
 	isOUtNet = !isOUtNet;
 }
 FINSH_FUNCTION_EXPORT(out_net, debug: out_net_information);
-uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length)
+
+
+uint8_t pal_sio_tx_vanet(uint16_t srcAddr, uint16_t prevHopAddr, uint8_t rssi, uint8_t radius, uint8_t *data, uint8_t length)
 {
 	rcp_rxinfo_t rxbd;
 	static uint8_t sumCount = 0;
@@ -425,7 +465,10 @@ NWK_PRIVATE bool nwkNewPassiveAck(frame_info_t *const txDelay,
 	gNwkPassiveAckTable.table[index].endDeviceNum = 0;
 	gNwkPassiveAckTable.table[index].prevHopAddr = prevHopAddr;
 	gNwkPassiveAckTable.table[index].timerID = index+APP_TIMER_BC_DATA;
-	gNwkPassiveAckTable.table[index].end = false;
+	if (txDelay == NULL)
+		gNwkPassiveAckTable.table[index].end = true;
+	else
+		gNwkPassiveAckTable.table[index].end = false;
 	gNwkPassiveAckTable.table[index].reTryTimes = 0;
 #ifndef VANET
 	uint8_t i,j=0;    
@@ -609,7 +652,8 @@ void bc_data_cb(frame_info_t *transmit_frame)
 		gNwkPassiveAckTable.table[index].end = false;
 		gNwkPassiveAckTable.table[index].reTryTimes = 0;
 		nwkFreePassiveAck(transmit_frame->NwkFrameHeader->srcAddr, transmit_frame->NwkFrameHeader->sequenceNumber);
-		bmm_buffer_free(transmit_frame->buffer_header);
+		if (transmit_frame != NULL)
+			bmm_buffer_free(transmit_frame->buffer_header);
 		//NwkState = NWK_MODULE_NONE;
 		mac_sleep_trans();
 	}
@@ -639,7 +683,8 @@ void bc_data_cb_vanet(frame_info_t *transmit_frame)
 		gNwkPassiveAckTable.table[index].end = false;
 		gNwkPassiveAckTable.table[index].reTryTimes = 0;
 		nwkFreePassiveAck(transmit_frame->NwkFrameHeader->srcAddr, transmit_frame->NwkFrameHeader->sequenceNumber);
-		//bmm_buffer_free(transmit_frame->buffer_header);
+		if (transmit_frame != NULL)
+			bmm_buffer_free(transmit_frame->buffer_header);
 		//NwkState = NWK_MODULE_NONE;//if为1时原本是释掉的
 		mac_sleep_trans();
 	}

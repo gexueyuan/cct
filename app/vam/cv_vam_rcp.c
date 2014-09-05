@@ -300,7 +300,10 @@ int rcp_parse_msg(vam_envar_t *p_vam,
 
         case RCP_MSG_ID_EVAM:
             /* receive evam, then pause sending bsm msg */
-            vsm_pause_bsm_broadcast(p_vam);
+            if(2 == p_vam->working_param.bsm_pause_mode)
+            {
+                vsm_pause_bsm_broadcast(p_vam);
+            }
             rcp_parse_evam(p_vam, rxinfo, databuf, datalen);
             break;
 

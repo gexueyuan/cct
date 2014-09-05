@@ -66,14 +66,12 @@ void led_off(led_color_t led)
 
 }
 
-void led_blink(led_color_t led)
+void led_blink(Led_TypeDef led)
 {
-    if (led.r)
-       STM_EVAL_LEDBlink((Led_TypeDef)LED_RED);
-    if (led.g)
-       STM_EVAL_LEDBlink((Led_TypeDef)LED_GREEN);
-    if (led.b)
-       STM_EVAL_LEDBlink((Led_TypeDef)LED_BLUE);
+    if (led < LEDn){
+        STM_EVAL_LEDBlink((Led_TypeDef)led);
+    }
+
 
 }
 

@@ -103,7 +103,7 @@ uint8_t serialMode;
 NwkPassiveAckEntry_t gNwkPassiveAckEntry[NWK_MAX_BROADCASR_TABLE_ENTRY];
 NwkPassiveAck_t gNwkPassiveAckTable;
 
-uint64_t broadDelayBitmap=0;
+uint32_t broadDelayBitmap=0;
 uint8_t minBroadDelayIndex=0;
 uint8_t broadDelayCount=0;
 NwkBroadDelay_t nwkBroadDelay[NWK_MAX_BROADCASR_TABLE_ENTRY];

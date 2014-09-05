@@ -130,8 +130,8 @@ void lip_update_local(t_nmea_rmc *p_rmc, float *p_accu)
 void lip_update_local_acc(float x, float y, float z)
 {
     vam_stastatus_t *p_local = &(p_vam_envar->local);
-    p_local->acce.lat = x;
-    p_local->acce.lon = y;
-    p_local->acce.vert = z;
+    p_local->acce.lon = x;   //longitudinal axis-纵轴: 车头方向
+    p_local->acce.lat = y;   //lateral axis-横轴: 车左方向
+    p_local->acce.vert = z;  //vertical axis-垂直方向
 }
 

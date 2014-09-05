@@ -47,6 +47,7 @@
 #include "tal_constants.h"
 #include "nwk_config.h"
 #include "app_uart.h"
+#include "cv_cms_def.h"
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
@@ -279,7 +280,7 @@ void nwk_init(void)
   gNwk_nib.channelPage          = tal_pib.CurrentPage;
 //#ifdef NO_JOIN
   gNwk_nib.logicalChannel       = App_System_Para_Pointer->AtCfgInfo.byRfChannelID + 11;
-  gNwk_nib.networkAddress       = App_System_Para_Pointer->AtCfgInfo.wNwkNodeID;
+  gNwk_nib.networkAddress       = p_cms_param->pid[3] | p_cms_param->pid[2]<<8;
   gNwk_nib.panId                = App_System_Para_Pointer->AtCfgInfo.wMacPanID;
 //#else
 //		  gNwk_nib.logicalChannel       = TAL_CURRENT_CHANNEL_DEFAULT;

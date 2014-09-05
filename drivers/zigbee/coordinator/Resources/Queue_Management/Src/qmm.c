@@ -25,7 +25,7 @@
 #include "bmm.h"
 #include "qmm.h"
 #include "app_config.h"
-
+#include <rtthread.h>
 #if (TOTAL_NUMBER_OF_BUFS > 0)
 
 /* === Types =============================================================== */
@@ -110,8 +110,8 @@ void qmm_queue_append(queue_t *q, buffer_t *buf)
         /* Check whether queue is empty */
     	if (q->size != 0 && q->head == NULL)//TODO debug
     	{
-   		q->head = (buffer_t *)0x20000000;
-   	}
+   							rt_kprintf("zigbee queue1 error\n");
+			}
         if (q->size == 0)
         {
             /* Add the buffer at the head */
@@ -135,7 +135,7 @@ void qmm_queue_append(queue_t *q, buffer_t *buf)
 //#if (DEBUG > 1)//TODO debug
         if (q->head == NULL)
         {
-					q->head = NULL;
+					rt_kprintf("zigbee queue2 error\n");
            // ASSERT("Corrupted queue: Null pointer has been queued" == 0);
         }
 //#endif

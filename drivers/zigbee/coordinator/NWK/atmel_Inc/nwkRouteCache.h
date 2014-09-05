@@ -61,7 +61,7 @@ typedef struct _NwkRouteCache_t
   NwkRouteCacheSize_t size;
   /* The index of oldest route record. */
   NwkRouteCacheIndex_t current;
-  uint64_t BitMap[BITMAPSIZE];
+  uint32_t BitMap[BITMAPSIZE];
 } NwkRouteCache_t;
 
 /******************************************************************************

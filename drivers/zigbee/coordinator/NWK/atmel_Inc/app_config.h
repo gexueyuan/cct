@@ -94,7 +94,7 @@ typedef enum
 #define TOTAL_NUMBER_OF_TIMERS      (NUMBER_OF_APP_TIMERS + NUMBER_OF_TOTAL_STACK_TIMERS + NUMBER_OF_NWK_STACK_TIMERS)//最后的1是permitjoining的定时器
 
 /** Defines the number of additional large buffers used by the application */
-#define NUMBER_OF_LARGE_APP_BUFS    (5)
+#define NUMBER_OF_LARGE_APP_BUFS    (30)
 
 /** Defines the number of additional small buffers used by the application */
 #define NUMBER_OF_SMALL_APP_BUFS    (0)

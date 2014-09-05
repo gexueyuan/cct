@@ -80,7 +80,7 @@ void vsm_pause_bsm_broadcast(vam_envar_t *p_vam)
     uint16_t period;
     rt_tick_t ticks;
 
-    if ((p_vam->working_param.bsm_pause_mode == 1) && (!(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE)))
+    if (!(p_vam->flag & VAM_FLAG_TX_BSM_PAUSE))
     {
         p_vam->flag |= VAM_FLAG_TX_BSM_PAUSE;
         period = p_vam->working_param.bsm_pause_hold_time;
@@ -156,12 +156,17 @@ void vsm_start_evam_broadcast(vam_envar_t *p_vam)
 
 void timer_send_evam_callback(void* parameter)
 {
+    static uint16_t mask = 0;
     vam_envar_t *p_vam = (vam_envar_t *)parameter;
     static uint8_t count = VAM_NO_ALERT_EVAM_TX_TIMES;
     if (p_vam->flag&VAM_FLAG_TX_EVAM)
     {
         /* broadcast evam, then pause bsm broadcast */
-        vsm_pause_bsm_broadcast(p_vam);
+        if((1 == p_vam->working_param.bsm_pause_mode) && (p_vam->local.alert_mask != mask))
+        {
+            vsm_pause_bsm_broadcast(p_vam);
+            mask = p_vam->local.alert_mask;
+        }
 
         vam_add_event_queue(p_vam, VAM_MSG_RCPTX, 0, RCP_MSG_ID_EVAM, NULL);
         /* 所有alter已取消 */
@@ -229,7 +234,8 @@ void vam_update_sta(vam_envar_t *p_vam)
     list_head_t *pos;
     list_head_t *head = &p_vam->neighbour_list;
     vam_stastatus_t sta;
-
+    static uint8_t gotNeighbour = 0;
+    uint8_t isEmpty = 1;
 //    rt_kprintf("%s--->\n", __FUNCTION__);
 
     if (rt_sem_take(p_vam->sem_sta, RT_WAITING_FOREVER) != RT_EOK){
@@ -238,6 +244,8 @@ void vam_update_sta(vam_envar_t *p_vam)
     }
 
     for (pos = head->next; pos != (head); ){
+        isEmpty = 0;
+        gotNeighbour = 1;
         /* must prefatch the next pointer */
         p_sta = (vam_sta_node_t *)pos;
         pos = pos->next;
@@ -263,6 +271,15 @@ void vam_update_sta(vam_envar_t *p_vam)
         }
     }
     rt_sem_release(p_vam->sem_sta);
+
+    /* neighbour list turn to empty */
+    if(gotNeighbour && isEmpty)
+    {
+        if(p_vam->evt_handler[VAM_EVT_PEER_UPDATE]){
+            (p_vam->evt_handler[VAM_EVT_PEER_UPDATE])(NULL);
+        }  
+        gotNeighbour = 0;
+    }
     
 }
 

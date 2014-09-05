@@ -42,6 +42,21 @@ typedef struct _GSENSOR_INFO
 	float sum;
 }GSENSOR_INFO;
 
+typedef struct
+{
+    uint8_t gsnr_cal_step;   /* gsensor calibrate and init step. default 0 */
+    uint8_t gsnr_cal_thr;    /* shake threshold when static calibrating. default 4 */
+    int8_t  gsnr_ebd_thr;     /* ebd thr. default -55 */
+    int8_t  gsnr_ebd_cnt;     /* ebd count. default 2 */
+    
+    int32_t AcceV_x;
+    int32_t AcceV_y;
+    int32_t AcceV_z;
+    int32_t AcceAhead_x;    
+    int32_t AcceAhead_y;
+    int32_t AcceAhead_z;
+}gsnr_param_t;
+
 extern GSENSOR_INFO gSensor_Average, gSensor_Threshold, Acce_Sum, Acce_V;
 extern uint8_t AdjustGsensor;
 

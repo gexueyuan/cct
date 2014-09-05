@@ -81,6 +81,11 @@ int rt_application_init(void)
 
 		rt_components_init();
 		rt_platform_init();
+
+		
+		rt_kprintf("\n\n");
+		rt_kprintf("app build %s,%s\n",__TIME__,__DATE__);
+		rt_kprintf("version: V01.0004\n\n");
 	
     rt_kprintf("system clock: %d\n", SystemCoreClock);
 

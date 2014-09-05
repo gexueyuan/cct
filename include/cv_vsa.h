@@ -40,8 +40,9 @@ typedef struct _vsa_config{
         Close Range Danger function:
     */
     uint8_t crd_saftyfactor;  /* 1~10 */
-	uint8_t crd_oppsite_speed;/*<=255:30km/h*/
-	uint8_t crd_rear_distance;/*<=255:10m*/
+    uint8_t crd_oppsite_speed;/*<=255:30km/h*/
+    uint8_t crd_oppsite_rear_speed;/*<=255:30km/h*/
+    uint8_t crd_rear_distance;/*<=255:10m*/
     /*
         Emergency Braking Danger function:
     */

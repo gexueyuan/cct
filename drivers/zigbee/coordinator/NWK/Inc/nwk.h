@@ -109,7 +109,7 @@ extern uint8_t serialMode;
 extern NwkPassiveAckEntry_t gNwkPassiveAckEntry[];
 extern NwkPassiveAck_t gNwkPassiveAckTable;
 
-extern uint64_t broadDelayBitmap;
+extern uint32_t broadDelayBitmap;
 extern uint8_t minBroadDelayIndex;
 extern uint8_t broadDelayCount;
 extern NwkBroadDelay_t nwkBroadDelay[];
