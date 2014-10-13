@@ -92,16 +92,19 @@ void lip_gps_proc(vam_envar_t *p_vam, uint8_t *databuf, uint32_t len)
 void lip_update_local(t_nmea_rmc *p_rmc, float *p_accu)
 {
     vam_envar_t *p_vam = &p_cms_envar->vam;
-    
     if (p_rmc){
         p_vam->local.pos.lat = (float)p_rmc->latitude;
-    	p_vam->local.pos.lon = (float)p_rmc->longitude;
+        p_vam->local.pos.lon = (float)p_rmc->longitude;
         if (p_vam->local.speed != (float)p_rmc->speed)
         {
-    	    p_vam->local.speed = (float)p_rmc->speed;
+            p_vam->local.speed = (float)p_rmc->speed;
             vsm_update_bsm_bcast_timer(p_vam);
         }
-        p_vam->local.dir = (float)p_rmc->heading;
+        /* 解决停车speed<=3 heading=0的问题, 使用>5km/h的heading */
+        if((p_rmc->heading >= 5.0) && (p_rmc->heading <= 360.0))
+        {
+            p_vam->local.dir = (float)p_rmc->heading;
+        }
 
         //dump_pos(&p_vam->local);
 

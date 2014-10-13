@@ -21,9 +21,9 @@
 #include "cv_cms_def.h"
 
 
-#define PARAM_FLAG_ADDR     ((uint32_t)0x80E0000)
+#define PARAM_FLAG_ADDR     ((uint32_t)0x8008000)
 
-#define PARAM_ADDR    		((uint32_t)0x80E0010)
+#define PARAM_ADDR    		(PARAM_FLAG_ADDR+0x10)
 
 
 extern 	int drv_fls_erase(uint32_t	sector);
@@ -107,7 +107,7 @@ void  write_def_param(void)
 
 	load_default_param(&flash_param);
 	
-	drv_fls_erase(FLASH_Sector_11);
+	drv_fls_erase(FLASH_Sector_2);
 	drv_fls_write(PARAM_FLAG_ADDR,param_init_words,sizeof(param_init_words));
 	err = drv_fls_write(PARAM_ADDR,(uint8_t *)&flash_param,sizeof(cfg_param_t));
 
@@ -392,7 +392,7 @@ int param_set(uint8_t param, int32_t value)
 
 	rt_kprintf("param is setting .....please don't power off!\n");
 		
-	drv_fls_erase(FLASH_Sector_11);
+	drv_fls_erase(FLASH_Sector_2);
 	drv_fls_write(PARAM_FLAG_ADDR,param_init_words,sizeof(param_init_words));
 	
 	err = drv_fls_write(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));
@@ -495,7 +495,7 @@ int8_t  gsnr_param_set(uint8_t gsnr_cal_step,int32_t AcceV_x,int32_t AcceV_y,int
 
 	memcpy((uint8_t*)p_cms_param,(uint8_t*)cfg_param,sizeof(cfg_param_t));
 	
-	drv_fls_erase(FLASH_Sector_11);
+	drv_fls_erase(FLASH_Sector_2);
 	drv_fls_write(PARAM_FLAG_ADDR,param_init_words,sizeof(param_init_words));
 
 	err = drv_fls_write(PARAM_ADDR,(uint8_t*)cfg_param,sizeof(cfg_param_t));

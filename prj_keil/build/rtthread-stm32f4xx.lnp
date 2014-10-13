@@ -11,6 +11,7 @@
 ".\build\cv_sys_manager.o"
 ".\build\cv_sys_param.o"
 ".\build\cv_sys_sound_resource.o"
+".\build\cv_cpuusage.o"
 ".\build\cv_drv_gps.o"
 ".\build\cv_drv_gsnr.o"
 ".\build\cv_drv_msnr.o"

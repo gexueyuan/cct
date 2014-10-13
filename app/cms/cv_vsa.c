@@ -20,7 +20,7 @@
 #include "cv_vsa.h"
 #include "key.h"
 
-
+//extern void dump_pos(vam_stastatus_t * p_sta);
 /*****************************************************************************
  * declaration of variables and functions                                    *
 *****************************************************************************/
@@ -49,7 +49,7 @@ void vsa_peer_status_update(void *parameter)
 		{
     		memcpy(&p_vsa->remote, p_sta, sizeof(vam_stastatus_t));
     		vsa_add_event_queue(p_vsa, VSA_MSG_PEER_UPDATE, 0,0,NULL);
-			if(!(p_cms_envar->sys.led_priority&(1<<SYS_MSG_BSM_UPDATE)))
+			if(!(p_cms_envar->sys.led_priority&(1<<HI_OUT_BSM_UPDATE)))
 			sys_add_event_queue(&p_cms_envar->sys,SYS_MSG_BSM_UPDATE, 0, HI_OUT_BSM_UPDATE, NULL);
 		}
 	else
@@ -112,7 +112,7 @@ static int crd_judge(vsa_envar_t *p_vsa)
         return 0;
     }
 
-    if (p_vsa->local.speed <= (p_vsa->remote.speed + p_vsa->working_param.crd_oppsite_speed)){
+    if (p_vsa->local.speed <= (p_vsa->remote.speed + (float)p_vsa->working_param.crd_oppsite_speed)){
 		
         return 0;
     }
@@ -123,11 +123,16 @@ static int crd_judge(vsa_envar_t *p_vsa)
     }
 
     /* remote is behind of local */
-    if (dis_actual <= 0){
-		
-        return 0;
-    }
-
+	if (p_vsa->alert_pend & (1<<VSA_ID_CRD))
+		{
+			if (dis_actual < -10)
+				return 0;
+		}
+	else
+		{
+			if (dis_actual <0)		
+        		return 0;
+		}
     if (dis_actual > dis_alert){
         return 0;
     }
@@ -135,7 +140,10 @@ static int crd_judge(vsa_envar_t *p_vsa)
 	//rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!!\n", dis_alert, dis_actual);
 
 	rt_kprintf("Close range danger alert(safty:%d, actual:%d)!!! Id:%d%d%d%d\n", dis_alert, dis_actual,p_vsa->remote.pid[0],p_vsa->remote.pid[1],p_vsa->remote.pid[2],p_vsa->remote.pid[3]);
-
+	
+	//dump_pos(&p_vsa->local);
+	
+	//dump_pos(&p_vsa->remote);
     return 1;
 }
 
@@ -170,11 +178,18 @@ static int rear_end_judge(vsa_envar_t *p_vsa)
 	
 
     /*local  is behind of remote */
-    if (dis_actual >= 0){
-		
-        return 0;
-    }
 
+	if (p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))
+		{
+			if (dis_actual >15)			
+			return 0;
+	}
+	else
+		{
+    		if (dis_actual >0)
+        		return 0;
+		}
+	
     if ((-dis_actual) > dis_alert){
         return 0;
     }

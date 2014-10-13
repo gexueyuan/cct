@@ -48,7 +48,8 @@ extern void led_off(led_color_t led);
 extern void led_blink(led_color_t led);
 
 extern int param_set(uint8_t param, int32_t value);
-//extern void Delay(volatile uint32_t nCount);
+
+extern void cpu_usage_get(rt_uint8_t *major, rt_uint8_t *minor);
 /*****************************************************************************
  * implementation of functions                                               *
 *****************************************************************************/
@@ -142,12 +143,19 @@ void sys_manage_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             {
 
                 if (p_msg->argc == VSA_ID_CRD){
+
+					if((p_vsa->alert_pend & (1<<VSA_ID_EBD))||(p_vsa->alert_pend & (1<<VSA_ID_VBD)))
+						return;
                     type = HI_OUT_CRD_ALERT;
                 }
                 else if (p_msg->argc == VSA_ID_CRD_REAR){
+					if((p_vsa->alert_pend & (1<<VSA_ID_EBD))||(p_vsa->alert_pend & (1<<VSA_ID_VBD))||(p_vsa->alert_pend & (1<<VSA_ID_CRD)))
+						return;
                     type = HI_OUT_CRD_REAR_ALERT;
                 }
                 else if (p_msg->argc == VSA_ID_VBD){
+					if(p_vsa->alert_pend & (1<<VSA_ID_EBD))
+						return;
                     type = HI_OUT_VBD_ALERT;
                 }
                 else if (p_msg->argc == VSA_ID_EBD){
@@ -243,6 +251,17 @@ void timer_human_interface_callback(void* parameter)
     p_sys->voc_flag = 0;
 }
 
+void timer_out_cpuusage(void* parameter)
+{
+	uint8_t cpuusage_maj,cpuusage_min;
+	
+	cpu_usage_get(&cpuusage_maj,&cpuusage_min);
+
+	rt_kprintf("cpu usage = %d%\n",cpuusage_maj);
+	
+}
+
+
 void timer_out_vsa_process(void* parameter)
 {
 	int  timevalue;
@@ -260,11 +279,12 @@ void timer_out_vsa_process(void* parameter)
 			timevalue = SECOND_TO_TICK(3);
 			voc_play(16000, (uint8_t *)bibi_breakdown_16k_8bits, bibi_breakdown_16k_8bitsLen);// 
 		}
+	/*
 	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD))	
 		voc_play(16000, (uint8_t *)bibi_front_16k_8bits, bibi_front_16k_8bitsLen);// 
 	else if(p_vsa->alert_pend & (1<<VSA_ID_CRD_REAR))	
 		voc_play(16000, (uint8_t *)bibi_behind_16k_8bits, bibi_behind_16k_8bitsLen);// 
-
+*/
 	rt_timer_control(p_cms_envar->sys.timer_voc,RT_TIMER_CTRL_SET_TIME,(void*)&timevalue);
 }
 
@@ -280,10 +300,10 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
 				break;
 
 			case HI_OUT_BSM_UPDATE:
-					p_sys->led_priority |= 1<<SYS_MSG_BSM_UPDATE;
+					p_sys->led_priority |= 1<<HI_OUT_BSM_UPDATE;
 				break;
 			case HI_OUT_BSM_NONE:
-					p_sys->led_priority &= ~(1<<SYS_MSG_BSM_UPDATE);
+					p_sys->led_priority &= ~(1<<HI_OUT_BSM_UPDATE);
 				break;				
 				
             case HI_OUT_CRD_ALERT:
@@ -460,7 +480,7 @@ void sys_human_interface_proc(sys_envar_t *p_sys, sys_msg_t *p_msg)
             p_sys->led_blink_period = 25;
             p_sys->led_blink_cnt = 0;
 		}
-	else if(p_sys->led_priority&(1<<SYS_MSG_BSM_UPDATE))
+	else if(p_sys->led_priority&(1<<HI_OUT_BSM_UPDATE))
 		{
 			p_sys->led_color.r = 0;//r=0,b=0,g=1
 			p_sys->led_color.b = 1;
@@ -599,13 +619,13 @@ void sys_init(void)
 
     p_sys->timer_voc= rt_timer_create("tm-voc",timer_out_vsa_process,p_vsa,\
         1,RT_TIMER_FLAG_PERIODIC); 					
-    RT_ASSERT(p_sys->timer_hi != RT_NULL);
+    RT_ASSERT(p_sys->timer_voc != RT_NULL);
 
-#if 0
-    p_sys->timer_crd= rt_timer_create("tm-crd",timer_out_crd_process,p_vsa,\
-        HUMAN_ITERFACE_VOC,RT_TIMER_FLAG_ONE_SHOT); 					
-    RT_ASSERT(p_sys->timer_crd != RT_NULL);
-#endif
+    p_sys->timer_cpuusage= rt_timer_create("tm-cpuusage",timer_out_cpuusage,NULL,\
+        SECOND_TO_TICK(3),RT_TIMER_FLAG_PERIODIC|RT_TIMER_FLAG_SOFT_TIMER); 					
+    RT_ASSERT(p_sys->timer_cpuusage != RT_NULL);
+
+	rt_timer_start(p_sys->timer_cpuusage);
     rt_kprintf("sysc module initial\n");
 }
 

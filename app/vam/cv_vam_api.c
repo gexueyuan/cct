@@ -172,7 +172,7 @@ int32_t vam_get_peer_relative_dir(uint8_t *pid)
 
     delta = (int32_t)vsm_get_relative_dir(&p_vam->local,&sta);
 
-    if ((delta <= 10)||(p_vam->local.speed == 0)||(sta.speed == 0)){
+    if ((delta <= 10)||(p_vam->local.speed < 1.0f)||(sta.speed < 1.0f)){
         r = 1;
     }
     else{

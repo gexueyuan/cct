@@ -36,6 +36,7 @@ extern void vsa_init(void);
 extern void sys_init(void);
 extern void gsnr_init(void);
 extern int rt_key_init(void);
+extern void cpu_usage_init(void);
 
 cms_global_t cms_envar, *p_cms_envar;
 
@@ -62,6 +63,7 @@ void rt_init_thread_entry(void *parameter)
     vsa_init();    
     sys_init();
     gsnr_init();
+	cpu_usage_init();
     //quit...
 }
 
