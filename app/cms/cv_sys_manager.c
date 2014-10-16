@@ -625,7 +625,7 @@ void sys_init(void)
         SECOND_TO_TICK(3),RT_TIMER_FLAG_PERIODIC|RT_TIMER_FLAG_SOFT_TIMER); 					
     RT_ASSERT(p_sys->timer_cpuusage != RT_NULL);
 
-	rt_timer_start(p_sys->timer_cpuusage);
+	//rt_timer_start(p_sys->timer_cpuusage);
     rt_kprintf("sysc module initial\n");
 }
 

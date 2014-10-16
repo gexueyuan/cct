@@ -63,7 +63,7 @@ void rt_init_thread_entry(void *parameter)
     vsa_init();    
     sys_init();
     gsnr_init();
-	cpu_usage_init();
+	//cpu_usage_init();
     //quit...
 }
 
